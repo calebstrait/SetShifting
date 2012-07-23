@@ -215,7 +215,7 @@ function set_shifting()
         area = 'none';
     end
     
-    function draw_circle(position, color)
+    function draw_circle(position, color, type)
         % Calculate circle center.
         if strcmp(position, 'left')
             circleCenterX = centerX - centerShift;
@@ -228,10 +228,19 @@ function set_shifting()
             circleCenterY = centerY - centerShift;
         end
         
-        Screen('FillOval', window, color, [circleCenterX - hfWidth; ...
-                                           circleCenterY - hfWidth; ...
-                                           circleCenterX + hfWidth; ...
-                                           circleCenterY + hfWidth]);
+        if strcmp(type, 'solid')
+            % Draw a filled circle.
+            Screen('FillOval', window, color, [circleCenterX - hfWidth; ...
+                                               circleCenterY - hfWidth; ...
+                                               circleCenterX + hfWidth; ...
+                                               circleCenterY + hfWidth]);
+        else
+            % Draw a circle outline.
+            Screen('FrameOval', window, color, [circleCenterX - hfWidth; ...
+                                                circleCenterY - hfWidth; ...
+                                                circleCenterX + hfWidth; ...
+                                                circleCenterY + hfWidth], 10, 10);
+        end
     end
 
     function draw_fixation_bounds()
@@ -253,8 +262,9 @@ function set_shifting()
                                            centerY + dotRadius]);
         Screen('Flip', window);
     end
-
-    function draw_star(position, color)
+    
+    % THIS FUNCTIION DOESN'T WORK AT ALL.
+    function draw_star(position, colorFill, colorOut, type)
         % Calculate star center.
         if strcmp(position, 'left')
             starCenterX = centerX - centerShift;
@@ -280,14 +290,48 @@ function set_shifting()
         point10 = [starCenterX + starBottomInX, starCenterY + starBottomInY];
         point11 = point1;
         
-        % Draw the star.
-        Screen('FillPoly', window, color, [point1; point2; point3;
-                                           point4; point5; point6;
-                                           point7; point8; point9;
-                                           point10; point11], 0);
+        if strcmp(type, 'solid')
+            % Draw a filled star.
+            Screen('FillPoly', window, colorFill, [point1; point2; point3; ...
+                                                   point4; point5; point6; ...
+                                                   point7; point8; point9; ...
+                                                   point10; point11], 0);
+        else
+            pointList = [{point1}, {point2}, {point3}, {point4}, {point5}, ...
+                         {point6}, {point7}, {point8}, {point9}, {point10}];
+            
+            % Calculate all outer star points.
+            for i = 1:10
+                temp = pointList{i};
+                pointX = temp(1);
+                pointY = temp(2);
+                
+                distance = pdist([starCenterX, starCenterY; pointX, pointY]);
+                slope = (pointY - starCenterY) / (pointX - starCenterX);
+                
+                if strcmp(num2str(slope), 'Inf') || strcmp(num2str(slope), '-Inf')
+                    disp(strcat('INFINITY', num2str(i), ': ', num2str(slope)));
+                else
+                    x = sym('x');
+                    y = sym('y');
+                    
+                    % Slope of a line equation.
+                    equation1 = (slope * x) - (slope * starCenterX) - (starCenterY + y);
+                    % Distance of a line equation.
+                    equation2 = (x^2) - (2 * x * starCenterX) + (starCenterX^2) + ...
+                                (y^2) - (2 * y * starCenterY) + (starCenterY^2) - ...
+                                (distance^2);
+                    solution = solve(equation1, equation2);
+                    
+                    disp(solution.x);
+                    disp(solution.y);
+                    disp('**********************************');
+                end
+            end
+        end
     end
     
-    function draw_triangle(position, color)
+    function draw_triangle(position, colorFill, colorOut, type)
         % Calculate triangle center.
         if strcmp(position, 'left')
             triCenterX = centerX - centerShift;
@@ -300,15 +344,34 @@ function set_shifting()
             triCenterY = centerY - centerShift;
         end
         
-        % Calculate all triangle points.
-        point1 = [triCenterX + hfWidth, triCenterY + hfWidth];
-        point2 = [triCenterX, triCenterY - hfWidth];
-        point3 = [triCenterX - hfWidth, triCenterY + hfWidth];
-        point4 = point1;
+        if strcmp(type, 'solid')
+            % Calculate all triangle points.
+            point1 = [triCenterX + hfWidth, triCenterY + hfWidth];
+            point2 = [triCenterX, triCenterY - hfWidth];
+            point3 = [triCenterX - hfWidth, triCenterY + hfWidth];
+            point4 = point1;
         
-        % Draw the triangle.
-        Screen('FillPoly', window, color, [point1; point2; ...
-                                           point3; point4], 1);
+            % Draw a filled triangle.
+            Screen('FillPoly', window, colorFill, [point1; point2; ...
+                                                   point3; point4], 0);
+        else
+            % Calculate all triangle points.
+            point1 = [triCenterX + hfWidth, triCenterY + hfWidth];
+            point2 = [triCenterX, triCenterY - hfWidth];
+            point3 = [triCenterX - hfWidth, triCenterY + hfWidth];
+            point4 = point1;
+            point5 = [triCenterX + hfWidth + 15, triCenterY + hfWidth + 10];
+            point6 = [triCenterX, triCenterY - hfWidth - 20];
+            point7 = [triCenterX - hfWidth - 15, triCenterY + hfWidth + 10];
+            point8 = point5;
+        
+            % Draw a filled triangle.
+            Screen('FillPoly', window, colorOut, [point5; point6; ...
+                                                  point7; point8], 0);
+            % Draw a triangle outline.
+            Screen('FillPoly', window, colorFill, [point1; point2; ...
+                                                   point3; point4], 0);
+        end
     end
     
     % Checks if the eye breaks fixation bounds before end of duration.
@@ -457,9 +520,6 @@ function set_shifting()
         % Fixation dot appears.
         draw_fixation_point(colorFixDot);
         
-        draw_circle('left', colorBlue);
-        draw_triangle('right', colorGreen);
-        draw_star('top', colorRed);                                  
     end
     
     % Sets up a new window and sets preferences for it.
