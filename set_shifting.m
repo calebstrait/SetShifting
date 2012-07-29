@@ -73,6 +73,7 @@ function set_shifting()
     
     % Stimuli.
     dotRadius       = 10;      % Radius of the fixation dot.
+    starOutline     = 10;      % Width of star outline.
     
     % Times.
     feedbackTime    = 0.4;     % Duration of the error state.
@@ -103,10 +104,10 @@ function set_shifting()
         
         run_single_trial;
         trialCount = trialCount + 1;
-        print_stats;
+        % print_stats;
     end
     
-    Screen('Close', window);
+    %Screen('Close', window);
     
     % ---------------------------------------------- %
     % ----------------- Functions ------------------ %
@@ -114,97 +115,108 @@ function set_shifting()
     
     % Determines if the eye has fixated within the given bounds
     % for the given duration before the given timeout occurs.
-    function [fixation, area] = check_fixation(xBoundMin, xBoundMax, ...
-                                               yBoundMin, yBoundMax, ...
-                                               xBoundMin2nd, xBoundMax2nd, ...
-                                               yBoundMin2nd, yBoundMax2nd, ...
-                                               duration, timeout, checkTwo)
+    function [fixation, area] = check_fixation(type, duration, timeout)
         startTime = GetSecs;
         
         % Keep checking for fixation until timeout occurs.
         while timeout > (GetSecs - startTime)
             [xCoord, yCoord] = get_eye_coords;
             
-            % Determine if one or two locations are being tracked.
-            if checkTwo
-                % Determine if eye is within either of the two fixation boundaries.
-                if (xCoord >= xBoundMin && xCoord <= xBoundMax && ...
-                    yCoord >= yBoundMin && yCoord <= yBoundMax) || ...
-                   (xCoord >= xBoundMin2nd && xCoord <= xBoundMax2nd && ...
-                    yCoord >= yBoundMin2nd && yCoord <= yBoundMax2nd)
-                    % Determine if the eye entered the leave option boundaries.
-                    if xCoord >= xBoundMin && xCoord <= xBoundMax && ...
-                       yCoord >= yBoundMin && yCoord <= yBoundMax
-                        % Notify Plexon: Eye looked at leave option.
-                        toplexon(4081);
-                        
-                        % Determine if eye maintained fixation for given duration.
-                        checkFixBreak = fix_break_check(xBoundMin, xBoundMax, ...
-                                                        yBoundMin, yBoundMax, ...
-                                                        duration);
-                        
-                        if checkFixBreak == false
-                            % Notify Plexon: Eye acquired fixtion on leave option.
-                            toplexon(4083);
-                            
-                            % Fixation was obtained for desired duration.
-                            fixation = true;
-                            area = 'first';
-                            
-                            return;
-                        else
-                            % Notify Plexon: Eye looked away from leave option.
-                            toplexon(4082);
-                        end
-                    % Determine if the eye entered the stay option boundaries.
-                    else
-                        % Notify Plexon: Eye looked at stay option.
-                        toplexon(4071);
-                        
-                        % Determine if eye maintained fixation for given duration.
-                        checkFixBreak = fix_break_check(xBoundMin2nd, xBoundMax2nd, ...
-                                                        yBoundMin2nd, yBoundMax2nd, ...
-                                                        duration);
-                        
-                        if checkFixBreak == false
-                            % Notify Plexon: Eye acquired fixtion on stay option.
-                            toplexon(4073);
-                            
-                            % Fixation was obtained for desired duration.
-                            fixation = true;
-                            area = 'second';
-                            
-                            return;
-                        else
-                            % Notify Plexon: Eye looked away from stay option.
-                            toplexon(4072);
-                        end
-                    end
-                end
-            else
+            % Determine if one, two, or three locations are being tracked.
+            if strcmp(type, 'single')
                 % Determine if eye is within the fixation boundary.
-                if xCoord >= xBoundMin && xCoord <= xBoundMax && ...
-                   yCoord >= yBoundMin && yCoord <= yBoundMax
-                    % Notify Plexon: Eye looked at fixation dot.
-                    toplexon(4051);
-                    
+                if xCoord >= fixBoundXMin && xCoord <= fixBoundXMax && ...
+                   yCoord >= fixBoundYMin && yCoord <= fixBoundYMax
                     % Determine if eye maintained fixation for given duration.
-                    checkFixBreak = fix_break_check(xBoundMin, xBoundMax, ...
-                                                    yBoundMin, yBoundMax, ...
+                    checkFixBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
+                                                    fixBoundYMin, fixBoundYMax, ...
                                                     duration);
                     
                     if checkFixBreak == false
-                        % Notify Plexon: Eye acquired fixation on fixation dot.
-                        toplexon(4053);
-                        
                         % Fixation was obtained for desired duration.
                         fixation = true;
                         area = 'single';
                         
                         return;
-                    else
-                        % Notify Plexon: Eye looked away from fixation dot.
-                        toplexon(4052);
+                    end
+                end
+            elseif strcmp(type, 'double')
+                % Determine if eye is within the left option boundary.
+                if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
+                   yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(leftBoundXMin, leftBoundXMax, ...
+                                                    leftBoundYMin, leftBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'double';
+                        
+                        return;
+                    end
+                % Determine if eye is within the right option boundary.
+                elseif xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
+                       yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(rightBoundXMin, rightBoundXMax, ...
+                                                    rightBoundYMin, rightBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'double';
+                        
+                        return;
+                    end
+                end
+            elseif strcmp(type, 'triple')
+                % Determine if eye is within the left option boundary.
+                if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
+                   yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(leftBoundXMin, leftBoundXMax, ...
+                                                    leftBoundYMin, leftBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'double';
+                        
+                        return;
+                    end
+                % Determine if eye is within the right option boundary.
+                elseif xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
+                       yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(rightBoundXMin, rightBoundXMax, ...
+                                                    rightBoundYMin, rightBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'double';
+                        
+                        return;
+                    end
+                % Determine if eye is within the top option boundary.
+                elseif xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
+                       yCoord >= topBoundYMin && yCoord <= topBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(topBoundXMin, topBoundXMax, ...
+                                                    topBoundYMin, topBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'double';
+                        
+                        return;
                     end
                 end
             end
@@ -289,7 +301,54 @@ function set_shifting()
         point9  = [starCenterX + starSpacerFloor, starCenterY + hfWidth];
         point10 = [starCenterX + starBottomInX, starCenterY + starBottomInY];
         point11 = point1;
-        
+        %{
+        % Draw a filled circle.
+        Screen('FillOval', window, colorOut, [point1(1) - 2; ...
+                                              point1(2) - 2; ...
+                                              point1(1) + 2; ...
+                                              point1(2) + 2]);
+        Screen('FillOval', window, colorOut, [point2(1) - 2; ...
+                                              point2(2) - 2; ...
+                                              point2(1) + 2; ...
+                                              point2(2) + 2]);
+        Screen('FillOval', window, colorOut, [point3(1) - 2; ...
+                                              point3(2) - 2; ...
+                                              point3(1) + 2; ...
+                                              point3(2) + 2]);
+        Screen('FillOval', window, colorOut, [point4(1) - 2; ...
+                                              point4(2) - 2; ...
+                                              point4(1) + 2; ...
+                                              point4(2) + 2]);
+        Screen('FillOval', window, colorOut, [point5(1) - 2; ...
+                                              point5(2) - 2; ...
+                                              point5(1) + 2; ...
+                                              point5(2) + 2]);
+        Screen('FillOval', window, colorOut, [point6(1) - 2; ...
+                                              point6(2) - 2; ...
+                                              point6(1) + 2; ...
+                                              point6(2) + 2]);
+        Screen('FillOval', window, colorOut, [point7(1) - 2; ...
+                                              point7(2) - 2; ...
+                                              point7(1) + 2; ...
+                                              point7(2) + 2]);
+        Screen('FillOval', window, colorOut, [point8(1) - 2; ...
+                                              point8(2) - 2; ...
+                                              point8(1) + 2; ...
+                                              point8(2) + 2]);
+        Screen('FillOval', window, colorOut, [point9(1) - 2; ...
+                                              point9(2) - 2; ...
+                                              point9(1) + 2; ...
+                                              point9(2) + 2]);
+        Screen('FillOval', window, colorOut, [point10(1) - 2; ...
+                                              point10(2) - 2; ...
+                                              point10(1) + 2; ...
+                                              point10(2) + 2]);
+        Screen('FillOval', window, colorOut, [starCenterX - 2; ...
+                                              starCenterY - 2; ...
+                                              starCenterX + 2; ...
+                                              starCenterY + 2]);
+                                          
+        %}
         if strcmp(type, 'solid')
             % Draw a filled star.
             Screen('FillPoly', window, colorFill, [point1; point2; point3; ...
@@ -302,13 +361,30 @@ function set_shifting()
             
             % Calculate all outer star points.
             for i = 1:10
-                temp = pointList{i};
-                pointX = temp(1);
-                pointY = temp(2);
+                currPoint = pointList{i};
+                coordX = currPoint(1);
+                coordY = currPoint(2);
                 
-                distance = pdist([starCenterX, starCenterY; pointX, pointY]);
+                % Straightline distance from center to current outer endpoint.
+                distance = pdist([starCenterX, starCenterY; coordX, coordY]);
+                slopeXCoord = coordX - starCenterX;
+                slopeYCoord = coordY - starCenterY;
+                [numerator, denominator] = numden(sym(slopeXCoord/slopeYCoord));
+                numerator = double(numerator);
+                denominator = double(denominator);
+                
+                disp(strcat('num: ', num2str(double(numerator))));
+                disp(strcat('den: ', num2str(double(denominator))));
+                
+                currLength = distance;
+                goalLength = distance + starOutline;
+                while goalLength >= currLength
+                    
+                end
+                
+                % disp(strcat('point: ', num2str(i), '; dist: ', num2str(distance)));
+                
                 slope = (pointY - starCenterY) / (pointX - starCenterX);
-                
                 if strcmp(num2str(slope), 'Inf') || strcmp(num2str(slope), '-Inf')
                     disp(strcat('INFINITY', num2str(i), ': ', num2str(slope)));
                 else
@@ -382,10 +458,6 @@ function set_shifting()
         
         % Keep checking for fixation breaks for the entire duration.
         while duration > (GetSecs - fixStartTime)
-            % Check for pressed keys.
-            keyPress = key_check;
-            key_execute(keyPress);
-            
             [xCoord, yCoord] = get_eye_coords;
             
             % Determine if the eye has left the fixation boundaries.
@@ -406,8 +478,8 @@ function set_shifting()
     function [xCoord, yCoord] = get_eye_coords()
         sampledPosition = Eyelink('NewestFloatSample');
         
-        xCoord = sampledPosition.gx(trackedEye);
-        yCoord = sampledPosition.gy(trackedEye);
+        xCoord = centerX; %sampledPosition.gx(trackedEye);
+        yCoord = centerY; %sampledPosition.gy(trackedEye);
     end
     
     % Checks to see what key was pressed.
@@ -518,8 +590,19 @@ function set_shifting()
 
     function run_single_trial()
         % Fixation dot appears.
-        draw_fixation_point(colorFixDot);
+        %draw_fixation_point(colorFixDot);
+        %draw_star('left', colorCyan, colorBlue, 'solid');
+        draw_fixation_bounds;
+        %{
+        fixating = check_fixation('single', minFixTime, timeToFix);
         
+        if fixating
+            disp('fixating!');
+            return;
+        else
+            disp('Did not initiate trial.');
+        end
+        %}
     end
     
     % Sets up a new window and sets preferences for it.
