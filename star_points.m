@@ -68,7 +68,6 @@ function points = star_points(centerColVector, armLength)
     points = starPoints;
     
     % Output for testing.
-    %{
     disp(starPoints);
     axis([-50, 50, -50, 50]);
     hold on;
@@ -80,5 +79,4 @@ function points = star_points(centerColVector, armLength)
             plot(starPoints(1, i), starPoints(2, i), 'g.');
         end
     end
-    %}
 end

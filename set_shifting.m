@@ -58,7 +58,15 @@ function set_shifting()
     rightBoundYMax  = centerY + 176;
     rightBoundYMin  = centerY;
     
-    centerShift     = 196;     % Dist. from fix. dot to center of other fix. squares.
+    centerShift         = 196;     % Dist. from fix. dot to center of other fix. squares.
+    circleAdj           = 22;
+    circleBorderHeight  = 11;
+    circleBorderWidth   = 11;
+    fixAdj              = 1;
+    starBorderWidth     = 30;
+    starHfWidth         = hfWidth + 10;
+    starShift           = centerShift - 6;
+    triAdj              = 30;
     
     % Values to draw star.
     starBottomInX   = 35;
@@ -69,7 +77,7 @@ function set_shifting()
     starTopInner    = 20;
     
     % References.
-    monkeyScreen    = 0;       % Number of the screen the monkey sees.
+    monkeyScreen    = 1;       % Number of the screen the monkey sees.
     
     % Stimuli.
     dotRadius       = 10;      % Radius of the fixation dot.
@@ -107,7 +115,7 @@ function set_shifting()
         % print_stats;
     end
     
-    %Screen('Close', window);
+    Screen('Close', window);
     
     % ---------------------------------------------- %
     % ----------------- Functions ------------------ %
@@ -227,7 +235,7 @@ function set_shifting()
         area = 'none';
     end
     
-    function draw_circle(position, color, type)
+    function draw_circle(position, type, colorFill, colorOut)
         % Calculate circle center.
         if strcmp(position, 'left')
             circleCenterX = centerX - centerShift;
@@ -242,16 +250,24 @@ function set_shifting()
         
         if strcmp(type, 'solid')
             % Draw a filled circle.
-            Screen('FillOval', window, color, [circleCenterX - hfWidth; ...
-                                               circleCenterY - hfWidth; ...
-                                               circleCenterX + hfWidth; ...
-                                               circleCenterY + hfWidth]);
-        else
+            Screen('FillOval', window, colorFill, [circleCenterX - hfWidth + circleAdj; ...
+                                                   circleCenterY - hfWidth; ...
+                                                   circleCenterX + hfWidth - circleAdj; ...
+                                                   circleCenterY + hfWidth]);
+        elseif strcmp(type, 'outline')
+            % Draw a filled circle.
+            Screen('FillOval', window, colorFill, [circleCenterX - hfWidth + circleAdj; ...
+                                                  circleCenterY - hfWidth; ...
+                                                  circleCenterX + hfWidth - circleAdj; ...
+                                                  circleCenterY + hfWidth]);
             % Draw a circle outline.
-            Screen('FrameOval', window, color, [circleCenterX - hfWidth; ...
-                                                circleCenterY - hfWidth; ...
-                                                circleCenterX + hfWidth; ...
-                                                circleCenterY + hfWidth], 10, 10);
+            Screen('FrameOval', window, colorOut, [circleCenterX - hfWidth + circleAdj; ...
+                                                   circleCenterY - hfWidth; ...
+                                                   circleCenterX + hfWidth - circleAdj; ...
+                                                   circleCenterY + hfWidth], ...
+                                                   circleBorderWidth, circleBorderHeight);
+        else
+            disp('Called draw_circle with an illegal value for the "type" parameter');
         end
     end
 
@@ -264,150 +280,50 @@ function set_shifting()
                                                   leftBoundXMax leftBoundYMax], 1);
         Screen('FrameRect', window, colorFixDot, [rightBoundXMin rightBoundYMin ...
                                                   rightBoundXMax rightBoundYMax], 1);
+        Screen('Flip', window);
     end
     
     % Draws the fixation point on the screen.
     function draw_fixation_point(color)
-        Screen('FillOval', window, color, [centerX - dotRadius; ...
+        Screen('FillOval', window, color, [centerX - dotRadius + fixAdj; ...
                                            centerY - dotRadius; ...
-                                           centerX + dotRadius; ...
+                                           centerX + dotRadius - fixAdj; ...
                                            centerY + dotRadius]);
         Screen('Flip', window);
     end
     
-    % THIS FUNCTIION DOESN'T WORK AT ALL.
-    function draw_star(position, colorFill, colorOut, type)
+    function draw_star(position, type, colorFill, colorOut)
         % Calculate star center.
         if strcmp(position, 'left')
             starCenterX = centerX - centerShift;
-            starCenterY = centerY + hfWidth;
+            starCenterY = centerY + starHfWidth;
         elseif strcmp(position, 'right')
             starCenterX = centerX + centerShift;
-            starCenterY = centerY + hfWidth;
+            starCenterY = centerY + starHfWidth;
         elseif strcmp(position, 'top')
             starCenterX = centerX;
-            starCenterY = centerY - centerShift;
+            starCenterY = centerY - starShift;
         end
         
         % Calculate all star points.
-        point1  = [starCenterX + hfWidth, starCenterY - starSpacerCeil];
-        point2  = [starCenterX + starTopInner, starCenterY - starSpacerCeil];
-        point3  = [starCenterX, starCenterY - hfWidth];
-        point4  = [starCenterX - starTopInner, starCenterY - starSpacerCeil];
-        point5  = [starCenterX - hfWidth, starCenterY - starSpacerCeil];
-        point6  = [starCenterX - starBottomInX, starCenterY + starBottomInY];
-        point7  = [starCenterX - starSpacerFloor, starCenterY + hfWidth];
-        point8  = [starCenterX, starCenterY + starBottomMid];
-        point9  = [starCenterX + starSpacerFloor, starCenterY + hfWidth];
-        point10 = [starCenterX + starBottomInX, starCenterY + starBottomInY];
-        point11 = point1;
-        %{
-        % Draw a filled circle.
-        Screen('FillOval', window, colorOut, [point1(1) - 2; ...
-                                              point1(2) - 2; ...
-                                              point1(1) + 2; ...
-                                              point1(2) + 2]);
-        Screen('FillOval', window, colorOut, [point2(1) - 2; ...
-                                              point2(2) - 2; ...
-                                              point2(1) + 2; ...
-                                              point2(2) + 2]);
-        Screen('FillOval', window, colorOut, [point3(1) - 2; ...
-                                              point3(2) - 2; ...
-                                              point3(1) + 2; ...
-                                              point3(2) + 2]);
-        Screen('FillOval', window, colorOut, [point4(1) - 2; ...
-                                              point4(2) - 2; ...
-                                              point4(1) + 2; ...
-                                              point4(2) + 2]);
-        Screen('FillOval', window, colorOut, [point5(1) - 2; ...
-                                              point5(2) - 2; ...
-                                              point5(1) + 2; ...
-                                              point5(2) + 2]);
-        Screen('FillOval', window, colorOut, [point6(1) - 2; ...
-                                              point6(2) - 2; ...
-                                              point6(1) + 2; ...
-                                              point6(2) + 2]);
-        Screen('FillOval', window, colorOut, [point7(1) - 2; ...
-                                              point7(2) - 2; ...
-                                              point7(1) + 2; ...
-                                              point7(2) + 2]);
-        Screen('FillOval', window, colorOut, [point8(1) - 2; ...
-                                              point8(2) - 2; ...
-                                              point8(1) + 2; ...
-                                              point8(2) + 2]);
-        Screen('FillOval', window, colorOut, [point9(1) - 2; ...
-                                              point9(2) - 2; ...
-                                              point9(1) + 2; ...
-                                              point9(2) + 2]);
-        Screen('FillOval', window, colorOut, [point10(1) - 2; ...
-                                              point10(2) - 2; ...
-                                              point10(1) + 2; ...
-                                              point10(2) + 2]);
-        Screen('FillOval', window, colorOut, [starCenterX - 2; ...
-                                              starCenterY - 2; ...
-                                              starCenterX + 2; ...
-                                              starCenterY + 2]);
-                                          
-        %}
+        starPoints = star_points([starCenterX; starCenterY], starHfWidth);
+        
         if strcmp(type, 'solid')
             % Draw a filled star.
-            Screen('FillPoly', window, colorFill, [point1; point2; point3; ...
-                                                   point4; point5; point6; ...
-                                                   point7; point8; point9; ...
-                                                   point10; point11], 0);
-        else
-            pointList = [{point1}, {point2}, {point3}, {point4}, {point5}, ...
-                         {point6}, {point7}, {point8}, {point9}, {point10}];
+            Screen('FillPoly', window, colorFill, starPoints, 0);
+        elseif strcmp(type, 'outline')
+            % Calculate all star points for inner star.
+            starPoints2nd = star_points([starCenterX; starCenterY], ...
+                                         starHfWidth - starBorderWidth);
             
-            % Calculate all outer star points.
-            for i = 1:10
-                currPoint = pointList{i};
-                coordX = currPoint(1);
-                coordY = currPoint(2);
-                
-                % Straightline distance from center to current outer endpoint.
-                distance = pdist([starCenterX, starCenterY; coordX, coordY]);
-                slopeXCoord = coordX - starCenterX;
-                slopeYCoord = coordY - starCenterY;
-                [numerator, denominator] = numden(sym(slopeXCoord/slopeYCoord));
-                numerator = double(numerator);
-                denominator = double(denominator);
-                
-                disp(strcat('num: ', num2str(double(numerator))));
-                disp(strcat('den: ', num2str(double(denominator))));
-                
-                currLength = distance;
-                goalLength = distance + starOutline;
-                while goalLength >= currLength
-                    
-                end
-                
-                % disp(strcat('point: ', num2str(i), '; dist: ', num2str(distance)));
-                
-                slope = (pointY - starCenterY) / (pointX - starCenterX);
-                if strcmp(num2str(slope), 'Inf') || strcmp(num2str(slope), '-Inf')
-                    disp(strcat('INFINITY', num2str(i), ': ', num2str(slope)));
-                else
-                    x = sym('x');
-                    y = sym('y');
-                    
-                    % Slope of a line equation.
-                    equation1 = (slope * x) - (slope * starCenterX) - (starCenterY + y);
-                    % Distance of a line equation.
-                    equation2 = (x^2) - (2 * x * starCenterX) + (starCenterX^2) + ...
-                                (y^2) - (2 * y * starCenterY) + (starCenterY^2) - ...
-                                (distance^2);
-                    solution = solve(equation1, equation2);
-                    
-                    disp(solution.x);
-                    disp(solution.y);
-                    disp('**********************************');
-                end
-            end
+            Screen('FillPoly', window, colorOut, starPoints, 0);
+            Screen('FillPoly', window, colorFill, starPoints2nd, 0);
+        else
+            disp('Called draw_star with an illegal value for the "type" parameter');
         end
     end
     
-    function draw_triangle(position, colorFill, colorOut, type)
+    function draw_triangle(position, type, colorFill, colorOut)
         % Calculate triangle center.
         if strcmp(position, 'left')
             triCenterX = centerX - centerShift;
@@ -420,33 +336,31 @@ function set_shifting()
             triCenterY = centerY - centerShift;
         end
         
+        % Calculate outer triangle points.
+        point1 = [triCenterX + hfWidth - triAdj, triCenterY + hfWidth];
+        point2 = [triCenterX, triCenterY - hfWidth];
+        point3 = [triCenterX - hfWidth + triAdj, triCenterY + hfWidth];
+        point4 = point1;
+            
         if strcmp(type, 'solid')
-            % Calculate all triangle points.
-            point1 = [triCenterX + hfWidth, triCenterY + hfWidth];
-            point2 = [triCenterX, triCenterY - hfWidth];
-            point3 = [triCenterX - hfWidth, triCenterY + hfWidth];
-            point4 = point1;
-        
             % Draw a filled triangle.
             Screen('FillPoly', window, colorFill, [point1; point2; ...
                                                    point3; point4], 0);
-        else
-            % Calculate all triangle points.
-            point1 = [triCenterX + hfWidth, triCenterY + hfWidth];
-            point2 = [triCenterX, triCenterY - hfWidth];
-            point3 = [triCenterX - hfWidth, triCenterY + hfWidth];
-            point4 = point1;
-            point5 = [triCenterX + hfWidth + 15, triCenterY + hfWidth + 10];
-            point6 = [triCenterX, triCenterY - hfWidth - 20];
-            point7 = [triCenterX - hfWidth - 15, triCenterY + hfWidth + 10];
+        elseif strcmp(type, 'outline')
+            % Calculate inner triangle points.
+            point5 = [triCenterX + hfWidth - 11 - triAdj, triCenterY + hfWidth - 10];
+            point6 = [triCenterX, triCenterY - hfWidth + 26];
+            point7 = [triCenterX - hfWidth + 11 + triAdj, triCenterY + hfWidth - 10];
             point8 = point5;
-        
             % Draw a filled triangle.
-            Screen('FillPoly', window, colorOut, [point5; point6; ...
-                                                  point7; point8], 0);
+            Screen('FillPoly', window, colorOut, [point1; point2; ...
+                                                  point3; point4], 0);
             % Draw a triangle outline.
-            Screen('FillPoly', window, colorFill, [point1; point2; ...
-                                                   point3; point4], 0);
+            Screen('FillPoly', window, colorFill, [point5; point6; ...
+                                                  point7; point8], 0);
+             
+        else
+            disp('Called draw_triangle with an illegal value for the "type" parameter');
         end
     end
     
@@ -590,19 +504,10 @@ function set_shifting()
 
     function run_single_trial()
         % Fixation dot appears.
-        %draw_fixation_point(colorFixDot);
-        %draw_star('left', colorCyan, colorBlue, 'solid');
-        draw_fixation_bounds;
-        %{
-        fixating = check_fixation('single', minFixTime, timeToFix);
-        
-        if fixating
-            disp('fixating!');
-            return;
-        else
-            disp('Did not initiate trial.');
-        end
-        %}
+        draw_fixation_point(colorFixDot);
+        draw_star('left', 'outline', colorBlue, colorCyan);
+        draw_triangle('top', 'outline', colorBlue, colorCyan);
+        draw_circle('right', 'outline', colorBlue, colorCyan);
     end
     
     % Sets up a new window and sets preferences for it.
@@ -615,5 +520,91 @@ function set_shifting()
         
         % Setup a screen for displaying stimuli for this session.
         window = Screen('OpenWindow', monkeyScreen, colorBackground);
+    end
+
+    function points = star_points(centerColVector, armLength)
+        innerPoints   = zeros(2, 5);       % Preallocate space for inner points.
+        outerPoints   = zeros(2, 5);       % Preallocate space for outer points.
+        rotationAngle = 0;                 % Rotation angle in degrees.
+        rotationInner = 108;               % First rotation angle (deg) for inner points.
+        rotationOuter = 72;                % Rotation angle (deg) between points.
+        starPoints    = zeros(11, 2);      % Preallocate space for all star points.
+        topPoint      = [0; ...
+                         -armLength];       % Topmost point of outer star points.
+        topPointInner = [0; ...
+                         -armLength / 2.6]; % Topmost point of inner star points.
+
+        % Create 5 outer star points.       
+        for i = 1:5
+            % Calculate new rotation matrix.
+            rotationAngle = rotationAngle + rotationOuter;
+            theta = rotationAngle * (pi / 180);
+            rotationMatrix = [cos(theta), -sin(theta); ...
+                              sin(theta), cos(theta)];
+
+            % Rotate point.
+            point = rotationMatrix * topPoint;
+
+            % Translate point.
+            point = point + centerColVector;
+
+            % Store that new point with the other rotated outer points.
+            outerPoints(1:end, i) = point;
+        end
+
+        % Create 5 inner star points.
+        for i = 1:5
+            % Calculate new rotation matrix.
+            if i == 1
+                rotationAngle = rotationAngle + rotationInner;
+            else
+                rotationAngle = rotationAngle + rotationOuter;
+            end
+            theta = rotationAngle * (pi / 180);
+            rotationMatrix = [cos(theta), -sin(theta); ...
+                              sin(theta), cos(theta)];
+
+            % Rotate point.
+            point = rotationMatrix * topPointInner;
+
+            % Translate point.
+            point = point + centerColVector;
+
+            % Store that new point with the other rotated inner points.
+            innerPoints(1:end, i) = point;
+        end
+
+        % Order points in a row vector.
+        for i = 1:11
+            if i ~= 11
+                if mod(i, 2) == 0
+                    starPoints(i, 1:end) = innerPoints(1:end, 1)';
+                    innerPoints(:, 1) = [];
+                else
+                    starPoints(i, 1:end) = outerPoints(1:end, 1)';
+                    outerPoints(:, 1) = [];
+                end
+            else
+                starPoints(i, 1:end) = starPoints(1, 1:end);
+            end
+        end
+
+        points = starPoints;
+        
+        % Output for testing.
+        %{
+        disp(starPoints);
+        axis([-50, 50, -50, 50]);
+        hold on;
+        plot(centerColVector(1, 1), centerColVector(2, 1), '+');
+        for i = 1:11
+            if i ~= 11
+                plot(starPoints(i, 1), starPoints(i, 2), 'b.');
+            else
+                plot(starPoints(i, 1), starPoints(i, 2), 'g.');
+            end
+            pause(2);
+        end
+        %}
     end
 end
