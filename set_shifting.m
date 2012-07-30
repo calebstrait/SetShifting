@@ -88,8 +88,12 @@ function set_shifting()
     timeToSaccade   = intmax;  % Time allowed for monkey to make a choice.
     
     % Trial.
+    colors          = [{'blue'}, {'green'}, {'red'}];
     corrAnsObject   = struct([]);
+    currTrial       = 0;
+    dimension       = [{'color'}, {'shape'}];
     numCorrTrials   = 0;
+    shapes          = [{'circle'}, {'star'}, {'triangle'}];
     trialCount      = 0;
     trialObject     = struct([]);
     
@@ -103,6 +107,9 @@ function set_shifting()
     % Eyelink.
     setup_eyelink;
     
+    % Prepare colors and shapes that will be used.
+    
+    
     % ---------------------------------------------- %
     % ------------ Main experiment loop ------------ %
     % ---------------------------------------------- %
@@ -113,6 +120,7 @@ function set_shifting()
         key_execute(keyPress);
         
         run_single_trial;
+        return;
         trialCount = trialCount + 1;
     end
     
@@ -390,6 +398,90 @@ function set_shifting()
         % Eye maintained fixation for entire duration.
         fixationBreak = false;
     end
+                
+    % Make a currect answer type for a trial based on experiment type.
+    function answer = generate_correct_answer()
+        temp = struct([]);
+        
+        if strcmp(experimentType, 'intraSS')
+            % Choose a dimension.
+            randIndex = rand_int(1);
+            dim = dimension(randIndex);
+            
+            % Choose a value for that dimension.
+            randValIndex = rand_int(2);
+            if strcmp(dim, 'color')
+                val = colors(randValIndex);
+            elseif strcmp(dim, 'shape')
+                val = shapes(randValIndex);
+            end
+            
+            % Set the correct answer type.
+            temp(currTrial).type  = 'intraSS';
+            temp(currTrial).dimension = dim;
+            temp(currTrial).value = val;
+        elseif strcmp(experimentType, 'extraSS')
+            % Choose a dimension.
+            randIndex = rand_int(1);
+            dim = dimension(randIndex);
+            
+            % Choose a value for that dimension.
+            randValIndex = rand_int(2);
+            if strcmp(dim, 'color')
+                val = colors(randValIndex);
+            elseif strcmp(dim, 'shape')
+                val = shapes(randValIndex);
+            end
+            
+            % Set the correct answer type.
+            temp(currTrial).type  = 'extraSS';
+            temp(currTrial).dimension = dim;
+            temp(currTrial).value = val;
+        elseif strcmp(experimentType, 'reversal')
+            randValIndex1 = rand_int(2);
+            randValIndex2 = rand_int(2);
+            
+            % Choose a correct answer value for the reversal experiment.
+            tempColor = colors(randValIndex1);
+            tempShape = shapes(randValIndex2);
+            val = strcat(tempShape, ';', tempColor);
+            
+            % Set the correct answer type.
+            temp(currTrial).type  = 'reversal';
+            temp(currTrial).dimension = 'both';
+            temp(currTrial).value = val;
+        else
+            disp('Error in generate_correct_answer.');
+        end
+        
+        answer = temp;
+    end
+    
+    % Make random stimuli for a trial, making sure correct ans is included.
+    function stimuli = generate_trial_stimuli()
+        temp = struct([]);
+        
+        if strcmp(experimentType, 'intraSS')
+            % Set the trial values.
+            temp(currTrial).type  = 'intraSS';
+            temp(currTrial).dimension = dim;
+            temp(currTrial).value = val;
+        elseif strcmp(experimentType, 'extraSS')
+            % Set the trial values.
+            temp(currTrial).type  = 'extraSS';
+            temp(currTrial).dimension = dim;
+            temp(currTrial).value = val;
+        elseif strcmp(experimentType, 'reversal')
+            % Set the trial values.
+            temp(currTrial).type  = 'reversal';
+            temp(currTrial).dimension = 'both';
+            temp(currTrial).value = val;
+        else
+            disp('Error in generate_trial_stimuli.');
+        end
+        
+        stimuli = temp;
+    end
     
     % Returns the current x and y coordinants of the given eye.
     function [xCoord, yCoord] = get_eye_coords()
@@ -484,6 +576,11 @@ function set_shifting()
         disp('****************************************');
     end
     
+    % Returns a random int between 1 (inclusive) and integer + 1 (inclusive).
+    function randInt = rand_int(integer)
+        randInt = round(rand(1) * integer + 1);
+    end
+    
     % Rewards monkey using the juicer with the passed duration.
     function reward(rewardAmount)
         if rewardAmount ~= 0
@@ -506,6 +603,8 @@ function set_shifting()
     end
 
     function run_single_trial()
+        currTrial = currTrial + 1;
+        
         % Fixation dot appears.
         draw_fixation_point(colorFixDot);
         
@@ -513,10 +612,23 @@ function set_shifting()
         [fixating, ~] = check_fixation('single', minFixTime, timeToFix);
         
         if fixating
-            if strcmp(experimentType, 'intraSS')
+            % Make sure correct answer is set at start of the session.
+            if trialCount == 0
+                corrAnsObject = generate_correct_answer;
+            end
+
+            % Reset correct answer if shift needs to occur.
+            if numCorrTrials == numCorrectToShift
+                corrAnsObject = generate_correct_answer;
+            end
                 
+            % Check experiment type.
+            if strcmp(experimentType, 'intraSS')
+                trialObject = generate_trial_stimuli;
             elseif strcmp(experimentType, 'extraSS')
+                trialObject = generate_trial_stimuli;
             elseif strcmp(experimentType, 'reversal')
+                trialObject = generate_trial_stimuli;
             else
                 disp('WARNING:');
                 disp('---------------------------------------------------------------------------');
