@@ -19,7 +19,7 @@
 % THE SOFTWARE.
 %
 
-function set_shifting()
+function set_shifting(monkeysInitial)
     % ---------------------------------------------- %
     % -------------- Global variables -------------- %
     % ---------------------------------------------- %
@@ -30,11 +30,11 @@ function set_shifting()
     % /////////////////////////////////////////////////////////////////// %
     
     % Frequently changed variables.
-    numCorrectToShift = 5;          % Number of correct trials before shift occurs.
-    experimentType    = 'intraSS';  % Values: 'intraSS', 'extraSS', or 'reversal'. NOTE: DON'T USE REVERSAL!
-    sessionType       = 'behavior'; % Values: 'behavior' or 'recording'.
-    rewardDuration    = 1.2;        % How long valve is open.
-    trackedEye        = 2;          % The eye that is being tracked (left: 1, right: 2).
+    numCorrectToShift = 3;             % Number of correct trials before shift occurs.
+    experimentType    = 'colorShift';  % Values: 'colorShift', 'shapeShift', 'intraSS', 'extraSS', or 'reversal'.
+    sessionType       = 'behavior';    % Values: 'behavior' or 'recording'.
+    rewardDuration    = 1.2;           % How long valve is open.
+    trackedEye        = 2;             % The eye that is being tracked (left: 1, right: 2).
     
     % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
     % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
@@ -85,24 +85,21 @@ function set_shifting()
     starShift           = centerShift - 6;
     triAdj              = 30;
     
-    % Star points.
-    triPointsBigLeft    = [];
-    triPointsSmallLeft  = [];
-    triPointsBigRight   = [];
-    triPointsSmallRight = [];
-    triPointsBigTop     = [];
-    triPointsSmallTop   = [];
-    
     % References.
-    monkeyScreen    = 1;       % Number of the screen the monkey sees.
+    monkeyScreen    = 1;        % Number of the screen the monkey sees.
+    
+    % Saving.
+    data            = struct([]);          % Workspace variable where trial data is saved.
+    saveCommand     = NaN;                 % Command string that will save .mat files.         
+    setShiftingData = '/Data/SetShifting'; % Directory where .mat files are saved.
+    varName         = 'data';              % Name of the var to save in the workspace.
     
     % Times.
     feedbackTime    = 0.4;     % Duration of the error state.
-    holdFixTime     = 0.25;    % Duration to hold fixation before choosing.
+    holdFixTime     = 0.5;     % Duration to hold fixation before choosing.
     ITI             = 0.8;     % Intertrial interval.
     minFixTime      = 0.1;     % Min time monkey must fixate to start trial.
     timeToFix       = intmax;  % Amount of time monkey is given to fixate.
-    timeToSaccade   = intmax;  % Time allowed for monkey to make a choice.
     
     % Trial.
     colors          = [{'blue'}, {'green'}, {'red'}];
@@ -110,26 +107,30 @@ function set_shifting()
     currentAnswer   = '';
     currTrial       = 0;
     dimension       = [{'color'}, {'shape'}];
-    intraSSDim      = '';
     numCorrTrials   = 0;
-    numberOfColors    = 3;          % How many different colors to use.
-    numberOfShapes    = 3;          % How many different shapes to use.
-    positions       = [{'left'}, {'right'}, {'top'}];
     shapes          = [{'circle'}, {'star'}, {'triangle'}];
     trialCount      = 0;
     trialObject     = struct([]);
     
+    % Color shift trial info.
+    chosenShape   = '';
+    colorOne      = '';
+    colorTwo      = '';
+    genColorShift = 0;
+    setUnits      = 0;  % Number of times a set shift unit has occurred.
+    
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
     % ---------------------------------------------- %
+    
+    % Saving.
+    prepare_for_saving;
     
     % Window.
     window = setup_window;
     
     % Eyelink.
     setup_eyelink;
-    
-    
     
     % ---------------------------------------------- %
     % ------------ Main experiment loop ------------ %
@@ -139,23 +140,11 @@ function set_shifting()
     while running
         keyPress = key_check;
         key_execute(keyPress);
-        %{
-        tic
-        draw_circle('top', 'solid', colorBlue, 'none');
-        disp(strcat('circle: ', num2str(toc)));
-        tic
-        draw_star('left', 'solid', colorRed, 'none');
-        disp(strcat('star: ', num2str(toc)));
-        tic
-        draw_triangle('right', 'solid', colorWhite, 'none');
-        disp(strcat('triangle: ', num2str(toc)));
-        %}
         
         run_single_trial;
         trialCount = trialCount + 1;
         print_stats();
         pause(ITI);
-        
     end
     
     Screen('Close', window);
@@ -163,32 +152,6 @@ function set_shifting()
     % ---------------------------------------------- %
     % ----------------- Functions ------------------ %
     % ---------------------------------------------- %
-    
-    function calculate_star_points()
-        % Calculate all star center points.
-        starCenterXLeft  = centerX - centerShift;
-        starCenterYLeft  = centerY + starHfWidth;
-        starCenterXRight = centerX + centerShift;
-        starCenterYRight = centerY + starHfWidth;
-        starCenterXTop   = centerX;
-        starCenterYTop   = centerY - starShift;
-        
-        % Calculate all star points.
-        triPointsBigLeft    = star_points([starCenterX; starCenterY], starHfWidth);
-        
-        triPointsSmallLeft  = starPoints2nd = star_points([starCenterX; starCenterY], ...
-                                                           starHfWidth - starBorderWidth);
-                                                       
-        triPointsBigRight   = star_points([starCenterX; starCenterY], starHfWidth);
-        
-        triPointsSmallRight = starPoints2nd = star_points([starCenterX; starCenterY], ...
-                                         starHfWidth - starBorderWidth);
-                                     
-        triPointsBigTop     = star_points([starCenterX; starCenterY], starHfWidth);
-        
-        triPointsSmallTop   = starPoints2nd = star_points([starCenterX; starCenterY], ...
-                                         starHfWidth - starBorderWidth);
-    end
     
     % Determines if the eye has fixated within the given bounds
     % for the given duration before the given timeout occurs.
@@ -265,6 +228,8 @@ function set_shifting()
                         area = 'left';
                         
                         return;
+                    else
+                        unstaggered_stimuli('none;none');
                     end
                 % Determine if eye is within the right option boundary.
                 elseif xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
@@ -281,7 +246,9 @@ function set_shifting()
                         area = 'right';
                         
                         return;
-                    end
+                    else
+                        unstaggered_stimuli('none;none');
+                    end 
                 % Determine if eye is within the top option boundary.
                 elseif xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
                        yCoord >= topBoundYMin && yCoord <= topBoundYMax
@@ -297,6 +264,8 @@ function set_shifting()
                         area = 'top';
                         
                         return;
+                    else
+                        unstaggered_stimuli('none;none');
                     end
                 end
             else
@@ -395,7 +364,6 @@ function set_shifting()
         else
             disp('Called draw_star with an illegal value for the "type" parameter');
         end
-        pause(2);
     end
     
     function draw_triangle(position, type, colorFill, colorOut)
@@ -467,44 +435,79 @@ function set_shifting()
     function answer = generate_correct_answer()
         temp = struct([]);
         
-        if strcmp(experimentType, 'intraSS')
-            % Choose a new dimension only on the first trial.
-            if trialCount == 0
-                % Choose a dimension.
-                randIndex = rand_int(1);
-                intraSSDim = dimension(randIndex);
+        if strcmp(experimentType, 'colorShift')
+            % Generate new colorShift values.
+            if trialCount == 0 || genColorShift
+                % Choose a color randomly from the total color pool w/o replacement.
+                randValIndex1 = rand_int(2);
+                color1 = char(colors(randValIndex1));
+                colors(randValIndex1) = [];
+
+                % Choose another color randomly from the total color pool.
+                randValIndex2 = rand_int(1);
+                color2 = char(colors(randValIndex2));
+
+                % Choose random shape if this is the first trial.
+                if trialCount == 0
+                    randValIndex3 = rand_int(2);
+                    shape = char(shapes(randValIndex3));
+                else
+                    shape = chosenShape;
+                end
+
+                % Set chosen shape and colors.
+                chosenShape = shape;
+                colorOne = color1;
+                colorTwo = color2;
+
+                % Set the correct answer type.
+                temp(currTrial).type = 'colorShift';
+                temp(currTrial).dimension = 'color';
+                temp(currTrial).value = color1;
+                temp(currTrial).shape = shape;
+                
+                % Reset trigger.
+                genColorShift = 0;
+            else
+                tempColor = colorOne;
+                colorOne = colorTwo;
+                colorTwo = tempColor;
+                
+                % Set the correct answer type.
+                temp(currTrial).type = 'colorShift';
+                temp(currTrial).dimension = 'color';
+                temp(currTrial).value = colorOne;
+                temp(currTrial).shape = chosenShape;
             end
-            
-            % Choose a value for that dimension.
+        elseif strcmp(experimentType, 'shapeShift')
+            disp('Shape shift answer generated here.');
+        elseif strcmp(experimentType, 'intraSS')
+            % Choose a color randomly.
             randValIndex = rand_int(2);
-            if strcmp(intraSSDim, 'color')
-                val = colors(randValIndex);
-            elseif strcmp(intraSSDim, 'shape')
-                val = shapes(randValIndex);
-            end
+            value = char(colors(randValIndex));
             
             % Set the correct answer type.
             temp(currTrial).type  = 'intraSS';
-            temp(currTrial).dimension = char(intraSSDim);
-            temp(currTrial).value = char(val);
+            temp(currTrial).dimension = 'color';
+            temp(currTrial).value = value;
         elseif strcmp(experimentType, 'extraSS')
             % Choose a dimension.
             randIndex = rand_int(1);
-            dim = dimension(randIndex);
+            dim = char(dimension(randIndex));
             
             % Choose a value for that dimension.
             randValIndex = rand_int(2);
             if strcmp(dim, 'color')
-                val = colors(randValIndex);
+                value = char(colors(randValIndex));
             elseif strcmp(dim, 'shape')
-                val = shapes(randValIndex);
+                value = char(shapes(randValIndex));
             end
             
             % Set the correct answer type.
             temp(currTrial).type  = 'extraSS';
-            temp(currTrial).dimension = char(dim);
-            temp(currTrial).value = char(val);
-        % THIS PART BELOW IS NOT CURRENTLY WORKING.
+            temp(currTrial).dimension = dim;
+            temp(currTrial).value = value;
+        % THIS PART BELOW IS NOT CURRENTLY WORKING (reversal).
         elseif strcmp(experimentType, 'reversal')
             randValIndex1 = rand_int(2);
             randValIndex2 = rand_int(2);
@@ -523,6 +526,11 @@ function set_shifting()
             disp('Error in generate_correct_answer.');
         end
         
+        % Reset these global variables. MAKE THIS BETTER.
+        colors = [{'blue'}, {'green'}, {'red'}];
+        shapes = [{'circle'}, {'star'}, {'triangle'}];
+        
+        % Sets the current correct response.
         currentAnswer = temp(currTrial).value;
         
         answer = temp;
@@ -535,7 +543,7 @@ function set_shifting()
         
         if strcmp(experimentType, 'reversal')
             % THIS CONDITION NOT CURRENTLY SUPPORTED.
-        else
+        elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
             % Find left stimulus value.
             randIndex1 = rand_int(2);
             leftValSub1 = char(shapes(randIndex1));
@@ -575,6 +583,42 @@ function set_shifting()
             temp(currTrial).left  = leftVal;
             temp(currTrial).right = rightVal;
             temp(currTrial).top = topVal;
+            
+            % Note the location of the correct choice.
+            corrAnsObject(currTrial).correct = correctSpot;
+        elseif strcmp(experimentType, 'colorShift')
+            tempColors = [{colorOne}, {colorTwo}, {colorTwo}];
+            
+            % Find left stimulus value.
+            randIndex1 = rand_int(2);
+            leftValSub = char(tempColors(randIndex1));
+            tempColors(randIndex1) = [];
+            
+            % Find right stimulus value.
+            randIndex2 = rand_int(1);
+            rightValSub = char(tempColors(randIndex2));
+            tempColors(randIndex2) = [];
+            
+            % Find top stimulus value.
+            topValSub = char(tempColors(1));
+            
+            leftVal = strcat(chosenShape, ';', leftValSub);
+            rightVal = strcat(chosenShape, ';', rightValSub);
+            topVal = strcat(chosenShape, ';', topValSub);
+            
+            % Set the trial values: '<shape>;<color>'.
+            temp(currTrial).left  = leftVal;
+            temp(currTrial).right = rightVal;
+            temp(currTrial).top = topVal;
+            
+            % Determin where the correct choice is located.
+            if strcmp(leftValSub, correctVal)
+                correctSpot = 'left';
+            elseif strcmp(rightValSub, correctVal)
+                correctSpot = 'right';
+            elseif strcmp(topValSub, correctVal)
+                correctSpot = 'top';
+            end
             
             % Note the location of the correct choice.
             corrAnsObject(currTrial).correct = correctSpot;
@@ -622,7 +666,7 @@ function set_shifting()
     
     % Makes a folder and file where data will be saved.
     function prepare_for_saving()
-        cd(validData);
+        cd(setShiftingData);
         
         % Check if cell ID was passed in with monkey's initial.
         if numel(monkeysInitial) == 1
@@ -634,9 +678,8 @@ function set_shifting()
         end
         
         dateStr = datestr(now, 'yymmdd');
-        filename = [initial dateStr '.' cell '1.C.mat'];
+        filename = [initial dateStr '.' cell '1.SS.mat'];
         folderNameDay = [initial dateStr];
-        folderNameBlock = ['Block' num2str(currBlock)];
         
         % Make and/or enter a folder where trial block folders are located.
         if exist(folderNameDay, 'dir') == 7
@@ -644,14 +687,6 @@ function set_shifting()
         else
             mkdir(folderNameDay);
             cd(folderNameDay);
-        end
-        
-        % Make and/or enter a folder where .mat files will be saved.
-        if exist(folderNameBlock, 'dir') == 7
-            cd(folderNameBlock);
-        else
-            mkdir(folderNameBlock);
-            cd(folderNameBlock);
         end
         
         % Make sure the filename for the .mat file is not already used.
@@ -721,8 +756,18 @@ function set_shifting()
             end
             
             % Reset correct answer if shift needs to occur.
-            if mod(numCorrTrials, numCorrectToShift) == 0
-                disp('TIME TO SHIFT THIS SET!');
+            if mod(numCorrTrials, numCorrectToShift) == 0 && ...
+               trialCount ~= 0
+                % Increment the shift color shift counter.
+                if strcmp(experimentType, 'colorShift')
+                    setUnits = setUnits + 1;
+                end
+                
+                % Schedule full color shift update at the 2nd shift.
+                if mod(setUnits, 2) == 0
+                    genColorShift = 1;
+                end
+                
                 corrAnsObject = generate_correct_answer;
             end
             
@@ -730,7 +775,9 @@ function set_shifting()
             if strcmp(experimentType, 'reversal')
                 % REVERSAL CURRENTLY NOT WORKING.
                 trialObject = generate_trial_stimuli; % Make sure to generate some stimuli!
-            elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
+            elseif strcmp(experimentType, 'intraSS') || ...
+                   strcmp(experimentType, 'extraSS') || ...
+                   strcmp(experimentType, 'colorShift')
                 trialObject = generate_trial_stimuli;
                 
                 if strcmp(sessionType, 'behavior')
@@ -816,9 +863,6 @@ function set_shifting()
         
         % Setup a screen for displaying stimuli for this session.
         window = Screen('OpenWindow', monkeyScreen, colorBackground);
-    end
-    
-    function staggered_stimuli()
     end
     
     function points = star_points(centerColVector, armLength)
@@ -909,7 +953,6 @@ function set_shifting()
 
     function unstaggered_stimuli(outerColor)
         input = strsplit(outerColor, ';');
-        disp(input);
         status = input(1);
         spot = input(2);
         
@@ -940,7 +983,9 @@ function set_shifting()
             else
                 draw_circle('left', 'solid', colorFill, 'none');
             end
-        elseif strcmp(right(1), 'circle')
+        end
+        
+        if strcmp(right(1), 'circle')
             if strcmp(right(2), 'blue')
                 colorFill = colorBlue;
             elseif strcmp(right(2), 'green')
@@ -958,7 +1003,9 @@ function set_shifting()
             else
                 draw_circle('right', 'solid', colorFill, 'none');
             end
-        else
+        end
+        
+        if strcmp(top(1), 'circle')
             if strcmp(top(2), 'blue')
                 colorFill = colorBlue;
             elseif strcmp(top(2), 'green')
@@ -977,7 +1024,7 @@ function set_shifting()
                 draw_circle('top', 'solid', colorFill, 'none');
             end
         end
-        %{
+        
         if strcmp(left(1), 'star')
             if strcmp(left(2), 'blue')
                 colorFill = colorBlue;
@@ -996,7 +1043,9 @@ function set_shifting()
             else
                 draw_star('left', 'solid', colorFill, 'none');
             end
-        elseif strcmp(right(1), 'star')
+        end
+        
+        if strcmp(right(1), 'star')
             if strcmp(right(2), 'blue')
                 colorFill = colorBlue;
             elseif strcmp(right(2), 'green')
@@ -1014,7 +1063,9 @@ function set_shifting()
             else
                 draw_star('right', 'solid', colorFill, 'none')
             end
-        else
+        end
+        
+        if strcmp(top(1), 'star')
             if strcmp(top(2), 'blue')
                 colorFill = colorBlue;
             elseif strcmp(top(2), 'green')
@@ -1033,7 +1084,7 @@ function set_shifting()
                 draw_star('top', 'solid', colorFill, 'none');
             end
         end
-        %}
+        
         if strcmp(left(1), 'triangle')
             if strcmp(left(2), 'blue')
                 colorFill = colorBlue;
@@ -1052,7 +1103,9 @@ function set_shifting()
             else
                 draw_triangle('left', 'solid', colorFill, 'none');
             end
-        elseif strcmp(right(1), 'triangle')
+        end
+        
+        if strcmp(right(1), 'triangle')
             if strcmp(right(2), 'blue')
                 colorFill = colorBlue;
             elseif strcmp(right(2), 'green')
@@ -1070,7 +1123,9 @@ function set_shifting()
             else
                 draw_triangle('right', 'solid', colorFill, 'none');
             end
-        else
+        end
+        
+        if strcmp(top(1), 'triangle')
             if strcmp(top(2), 'blue')
                 colorFill = colorBlue;
             elseif strcmp(top(2), 'green')
