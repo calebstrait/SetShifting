@@ -26,7 +26,7 @@ function set_shifting()
     
     % Frequently changed variables.
     numCorrectToShift = 10;         % Number of correct trials before shift occurs.
-    experimentType    = 'intraSS';  % Values: 'intraSS', 'extraSS', or 'reversal'.
+    experimentType    = 'reversal';  % Values: 'intraSS', 'extraSS', or 'reversal'.
     numberOfColors    = 3;          % How many different colors to use.
     numberOfShapes    = 3;          % How many different shapes to use.
     sessionType       = 'behavior'; % Values: 'behavior' or 'recording'.
@@ -120,7 +120,6 @@ function set_shifting()
         key_execute(keyPress);
         
         run_single_trial;
-        return;
         trialCount = trialCount + 1;
     end
     
@@ -444,7 +443,7 @@ function set_shifting()
             % Choose a correct answer value for the reversal experiment.
             tempColor = colors(randValIndex1);
             tempShape = shapes(randValIndex2);
-            val = strcat(tempShape, ';', tempColor);
+            val = strcat(char(tempShape), ';', char(tempColor));
             
             % Set the correct answer type.
             temp(currTrial).type  = 'reversal';
@@ -461,24 +460,24 @@ function set_shifting()
     function stimuli = generate_trial_stimuli()
         temp = struct([]);
         
-        if strcmp(experimentType, 'intraSS')
-            % Set the trial values.
-            temp(currTrial).type  = 'intraSS';
-            temp(currTrial).dimension = dim;
-            temp(currTrial).value = val;
-        elseif strcmp(experimentType, 'extraSS')
-            % Set the trial values.
-            temp(currTrial).type  = 'extraSS';
-            temp(currTrial).dimension = dim;
-            temp(currTrial).value = val;
-        elseif strcmp(experimentType, 'reversal')
-            % Set the trial values.
-            temp(currTrial).type  = 'reversal';
-            temp(currTrial).dimension = 'both';
-            temp(currTrial).value = val;
-        else
-            disp('Error in generate_trial_stimuli.');
-        end
+%         if strcmp(experimentType, 'intraSS')
+%             % Set the trial values.
+%             temp(currTrial).left  = ;
+%             temp(currTrial).right = ;
+%             temp(currTrial).top = ;
+%         elseif strcmp(experimentType, 'extraSS')
+%             % Set the trial values.
+%             temp(currTrial).left  = ;
+%             temp(currTrial).right = ;
+%             temp(currTrial).top = ;
+%         elseif strcmp(experimentType, 'reversal')
+%             % Set the trial values.
+%             temp(currTrial).left  = ;
+%             temp(currTrial).right = ;
+%             temp(currTrial).top = ;
+%         else
+%             disp('Error in generate_trial_stimuli.');
+%         end
         
         stimuli = temp;
     end
@@ -779,5 +778,115 @@ function set_shifting()
 
     function unstaggered_stimuli(ruleType)
         
+    end
+end
+
+function terms = strsplit(s, delimiter)
+%STRSPLIT Splits a string into multiple terms
+%
+%   terms = strsplit(s)
+%       splits the string s into multiple terms that are separated by
+%       white spaces (white spaces also include tab and newline).
+%
+%       The extracted terms are returned in form of a cell array of
+%       strings.
+%
+%   terms = strsplit(s, delimiter)
+%       splits the string s into multiple terms that are separated by
+%       the specified delimiter. 
+%   
+%   Remarks
+%   -------
+%       - Note that the spaces surrounding the delimiter are considered
+%         part of the delimiter, and thus removed from the extracted
+%         terms.
+%
+%       - If there are two consecutive non-whitespace delimiters, it is
+%         regarded that there is an empty-string term between them.         
+%
+%   Examples
+%   --------
+%       % extract the words delimited by white spaces
+%       ts = strsplit('I am using MATLAB');
+%       ts <- {'I', 'am', 'using', 'MATLAB'}
+%
+%       % split operands delimited by '+'
+%       ts = strsplit('1+2+3+4', '+');
+%       ts <- {'1', '2', '3', '4'}
+%
+%       % It still works if there are spaces surrounding the delimiter
+%       ts = strsplit('1 + 2 + 3 + 4', '+');
+%       ts <- {'1', '2', '3', '4'}
+%
+%       % Consecutive delimiters results in empty terms
+%       ts = strsplit('C,Java, C++ ,, Python, MATLAB', ',');
+%       ts <- {'C', 'Java', 'C++', '', 'Python', 'MATLAB'}
+%
+%       % When no delimiter is presented, the entire string is considered
+%       % as a single term
+%       ts = strsplit('YouAndMe');
+%       ts <- {'YouAndMe'}
+%
+
+%   History
+%   -------
+%       - Created by Dahua Lin, on Oct 9, 2008
+%
+    %% parse and verify input arguments
+
+    assert(ischar(s) && ndims(s) == 2 && size(s,1) <= 1, ...
+        'strsplit:invalidarg', ...
+        'The first input argument should be a char string.');
+
+    if nargin < 2
+        by_space = true;
+    else
+        d = delimiter;
+        assert(ischar(d) && ndims(d) == 2 && size(d,1) == 1 && ~isempty(d), ...
+            'strsplit:invalidarg', ...
+            'The delimiter should be a non-empty char string.');
+
+        d = strtrim(d);
+        by_space = isempty(d);
+    end
+
+    %% main
+
+    s = strtrim(s);
+
+    if by_space
+        w = isspace(s);            
+        if any(w)
+            % decide the positions of terms        
+            dw = diff(w);
+            sp = [1, find(dw == -1) + 1];     % start positions of terms
+            ep = [find(dw == 1), length(s)];  % end positions of terms
+
+            % extract the terms        
+            nt = numel(sp);
+            terms = cell(1, nt);
+            for i = 1 : nt
+                terms{i} = s(sp(i):ep(i));
+            end                
+        else
+            terms = {s};
+        end
+
+    else    
+        p = strfind(s, d);
+        if ~isempty(p)        
+            % extract the terms        
+            nt = numel(p) + 1;
+            terms = cell(1, nt);
+            sp = 1;
+            dl = length(delimiter);
+            for i = 1 : nt-1
+                terms{i} = strtrim(s(sp:p(i)-1));
+                sp = p(i) + dl;
+            end         
+            terms{nt} = strtrim(s(sp:end));
+        else
+            terms = {s};
+        end        
     end
 end
