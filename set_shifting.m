@@ -30,9 +30,10 @@ function set_shifting()
     % /////////////////////////////////////////////////////////////////// %
     
     % Frequently changed variables.
-    numCorrectToShift = 10;         % Number of correct trials before shift occurs.
-    experimentType    = 'extraSS';  % Values: 'intraSS', 'extraSS', or 'reversal'. NOTE: DON'T USE REVERSAL!
+    numCorrectToShift = 5;          % Number of correct trials before shift occurs.
+    experimentType    = 'intraSS';  % Values: 'intraSS', 'extraSS', or 'reversal'. NOTE: DON'T USE REVERSAL!
     sessionType       = 'behavior'; % Values: 'behavior' or 'recording'.
+    rewardDuration    = 1.2;        % How long valve is open.
     trackedEye        = 2;          % The eye that is being tracked (left: 1, right: 2).
     
     % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
@@ -84,6 +85,14 @@ function set_shifting()
     starShift           = centerShift - 6;
     triAdj              = 30;
     
+    % Star points.
+    triPointsBigLeft    = [];
+    triPointsSmallLeft  = [];
+    triPointsBigRight   = [];
+    triPointsSmallRight = [];
+    triPointsBigTop     = [];
+    triPointsSmallTop   = [];
+    
     % References.
     monkeyScreen    = 1;       % Number of the screen the monkey sees.
     
@@ -98,6 +107,7 @@ function set_shifting()
     % Trial.
     colors          = [{'blue'}, {'green'}, {'red'}];
     corrAnsObject   = struct([]);
+    currentAnswer   = '';
     currTrial       = 0;
     dimension       = [{'color'}, {'shape'}];
     intraSSDim      = '';
@@ -119,7 +129,6 @@ function set_shifting()
     % Eyelink.
     setup_eyelink;
     
-    % Prepare colors and shapes that will be used.
     
     
     % ---------------------------------------------- %
@@ -130,9 +139,23 @@ function set_shifting()
     while running
         keyPress = key_check;
         key_execute(keyPress);
+        %{
+        tic
+        draw_circle('top', 'solid', colorBlue, 'none');
+        disp(strcat('circle: ', num2str(toc)));
+        tic
+        draw_star('left', 'solid', colorRed, 'none');
+        disp(strcat('star: ', num2str(toc)));
+        tic
+        draw_triangle('right', 'solid', colorWhite, 'none');
+        disp(strcat('triangle: ', num2str(toc)));
+        %}
         
         run_single_trial;
         trialCount = trialCount + 1;
+        print_stats();
+        pause(ITI);
+        
     end
     
     Screen('Close', window);
@@ -140,6 +163,32 @@ function set_shifting()
     % ---------------------------------------------- %
     % ----------------- Functions ------------------ %
     % ---------------------------------------------- %
+    
+    function calculate_star_points()
+        % Calculate all star center points.
+        starCenterXLeft  = centerX - centerShift;
+        starCenterYLeft  = centerY + starHfWidth;
+        starCenterXRight = centerX + centerShift;
+        starCenterYRight = centerY + starHfWidth;
+        starCenterXTop   = centerX;
+        starCenterYTop   = centerY - starShift;
+        
+        % Calculate all star points.
+        triPointsBigLeft    = star_points([starCenterX; starCenterY], starHfWidth);
+        
+        triPointsSmallLeft  = starPoints2nd = star_points([starCenterX; starCenterY], ...
+                                                           starHfWidth - starBorderWidth);
+                                                       
+        triPointsBigRight   = star_points([starCenterX; starCenterY], starHfWidth);
+        
+        triPointsSmallRight = starPoints2nd = star_points([starCenterX; starCenterY], ...
+                                         starHfWidth - starBorderWidth);
+                                     
+        triPointsBigTop     = star_points([starCenterX; starCenterY], starHfWidth);
+        
+        triPointsSmallTop   = starPoints2nd = star_points([starCenterX; starCenterY], ...
+                                         starHfWidth - starBorderWidth);
+    end
     
     % Determines if the eye has fixated within the given bounds
     % for the given duration before the given timeout occurs.
@@ -204,6 +253,7 @@ function set_shifting()
                 % Determine if eye is within the left option boundary.
                 if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
                    yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                    unstaggered_stimuli('looking;left');
                     % Determine if eye maintained fixation for given duration.
                     checkFixBreak = fix_break_check(leftBoundXMin, leftBoundXMax, ...
                                                     leftBoundYMin, leftBoundYMax, ...
@@ -219,6 +269,7 @@ function set_shifting()
                 % Determine if eye is within the right option boundary.
                 elseif xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
                        yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                    unstaggered_stimuli('looking;right');
                     % Determine if eye maintained fixation for given duration.
                     checkFixBreak = fix_break_check(rightBoundXMin, rightBoundXMax, ...
                                                     rightBoundYMin, rightBoundYMax, ...
@@ -234,6 +285,7 @@ function set_shifting()
                 % Determine if eye is within the top option boundary.
                 elseif xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
                        yCoord >= topBoundYMin && yCoord <= topBoundYMax
+                    unstaggered_stimuli('looking;top');
                     % Determine if eye maintained fixation for given duration.
                     checkFixBreak = fix_break_check(topBoundXMin, topBoundXMax, ...
                                                     topBoundYMin, topBoundYMax, ...
@@ -471,12 +523,15 @@ function set_shifting()
             disp('Error in generate_correct_answer.');
         end
         
+        currentAnswer = temp(currTrial).value;
+        
         answer = temp;
     end
     
     % Make random stimuli for a trial, making sure correct ans is included.
     function stimuli = generate_trial_stimuli()
         temp = struct([]);
+        correctVal = currentAnswer;
         
         if strcmp(experimentType, 'reversal')
             % THIS CONDITION NOT CURRENTLY SUPPORTED.
@@ -490,6 +545,10 @@ function set_shifting()
             colors(randIndex2) = [];
             leftVal = strcat(leftValSub1, ';', leftValSub2);
             
+            if strcmp(leftValSub1, correctVal) || strcmp(leftValSub2, correctVal)
+                correctSpot = 'left';
+            end
+            
             % Find right stimulus value.
             randIndex1 = rand_int(1);
             rightValSub1 = char(shapes(randIndex1));
@@ -499,15 +558,26 @@ function set_shifting()
             colors(randIndex2) = [];
             rightVal = strcat(rightValSub1, ';', rightValSub2);
             
+            if strcmp(rightValSub1, correctVal) || strcmp(rightValSub2, correctVal)
+                correctSpot = 'right';
+            end
+            
             % Find top stimulus value.
             topValSub1 = char(shapes(1));
             topValSub2 = char(colors(1));
             topVal = strcat(topValSub1, ';', topValSub2);
             
+            if strcmp(topValSub1, correctVal) || strcmp(topValSub2, correctVal)
+                correctSpot = 'top';
+            end
+            
             % Set the trial values: '<shape>;<color>'.
             temp(currTrial).left  = leftVal;
             temp(currTrial).right = rightVal;
             temp(currTrial).top = topVal;
+            
+            % Note the location of the correct choice.
+            corrAnsObject(currTrial).correct = correctSpot;
         end
         
         % Reset these global variables. MAKE THIS BETTER.
@@ -616,11 +686,10 @@ function set_shifting()
     end
     
     % Rewards monkey using the juicer with the passed duration.
-    function reward(rewardAmount)
-        if rewardAmount ~= 0
+    function reward(rewardDuration)
+        if rewardDuration ~= 0
             % Get a reference the juicer device and set reward duration.
             daq = DaqDeviceIndex;
-            rewardDuration = rewardAmount * pourTimeOneMl;
             
             % Open juicer.
             DaqAOut(daq, 0, .6);
@@ -652,51 +721,47 @@ function set_shifting()
             end
             
             % Reset correct answer if shift needs to occur.
-            if numCorrTrials == numCorrectToShift
+            if mod(numCorrTrials, numCorrectToShift) == 0
+                disp('TIME TO SHIFT THIS SET!');
                 corrAnsObject = generate_correct_answer;
             end
             
             % Check experiment type.
-            if strcmp(experimentType, 'intraSS')
+            if strcmp(experimentType, 'reversal')
+                % REVERSAL CURRENTLY NOT WORKING.
+                trialObject = generate_trial_stimuli; % Make sure to generate some stimuli!
+            elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
                 trialObject = generate_trial_stimuli;
                 
                 if strcmp(sessionType, 'behavior')
-                    unstaggered_stimuli('none');
+                    unstaggered_stimuli('none;none');
                     
-                    [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
-                    
-                    if fixatingOnTarget
-                        unstaggered_stimuli('correct');
-                        pause(2);
-                        disp(area);
+                    fixatingOnTarget = false;
+                    while ~fixatingOnTarget
+                        % Check for fixation on any three targets.
+                        [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
+
+                        if fixatingOnTarget
+                            % Fetch correct location.
+                            correctSpot = corrAnsObject(currTrial).correct;
+
+                            if strcmp(area, correctSpot)
+                                unstaggered_stimuli(strcat('correct', ';', area));
+                                reward(rewardDuration);
+                                pause(feedbackTime);
+
+                                numCorrTrials = numCorrTrials + 1;
+                            else
+                                unstaggered_stimuli(strcat('incorrect', ';', area));
+                                pause(feedbackTime);
+                            end
+                        end
                     end
                 else
-                    % THIS PORTION CURRENTLY NOT WORKING.
+                    % THIS PORTION CURRENTLY NOT WORKING (reversal).
                     staggered_stimuli;
                 end
-            elseif strcmp(experimentType, 'extraSS')
-                trialObject = generate_trial_stimuli;
-                
-                if strcmp(sessionType, 'behavior')
-                    unstaggered_stimuli('none');
-                    
-                    [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
-                    
-                    if fixatingOnTarget
-                        unstaggered_stimuli('correct');
-                        pause(2);
-                        disp(area);
-                    end
-                else
-                    % THIS PORTION CURRENTLY NOT WORKING.
-                    staggered_stimuli;
-                end
-            % REVERSAL CURRENTLY NOT WORKING.
-            elseif strcmp(experimentType, 'reversal')
-                trialObject = generate_trial_stimuli;
             else
-                disp('WARNING:');
-                disp('---------------------------------------------------------------------------');
                 disp('Experiment started with an illegal value for the "experimentType" parameter.');
             end
         else
@@ -843,6 +908,11 @@ function set_shifting()
     end
 
     function unstaggered_stimuli(outerColor)
+        input = strsplit(outerColor, ';');
+        disp(input);
+        status = input(1);
+        spot = input(2);
+        
         left = strsplit(trialObject(currTrial).left, ';');
         right = strsplit(trialObject(currTrial).right, ';');
         top = strsplit(trialObject(currTrial).top, ';');
@@ -861,14 +931,14 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_circle('left', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_circle('left', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_circle('left', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'left')
+                draw_circle('left', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                draw_circle('left', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                draw_circle('left', 'outline', colorFill, colorFixDot);
             else
-                draw_circle('left', 'solid', colorFill, 'none')
+                draw_circle('left', 'solid', colorFill, 'none');
             end
         elseif strcmp(right(1), 'circle')
             if strcmp(right(2), 'blue')
@@ -879,14 +949,14 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_circle('right', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_circle('right', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_circle('right', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'right')
+                draw_circle('right', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                draw_circle('right', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                draw_circle('right', 'outline', colorFill, colorFixDot);
             else
-                draw_circle('right', 'solid', colorFill, 'none')
+                draw_circle('right', 'solid', colorFill, 'none');
             end
         else
             if strcmp(top(2), 'blue')
@@ -897,17 +967,17 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_circle('top', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_circle('top', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_circle('top', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'top')
+                draw_circle('top', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'top')
+                draw_circle('top', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
+                draw_circle('top', 'outline', colorFill, colorFixDot);
             else
-                draw_circle('top', 'solid', colorFill, 'none')
+                draw_circle('top', 'solid', colorFill, 'none');
             end
         end
-        
+        %{
         if strcmp(left(1), 'star')
             if strcmp(left(2), 'blue')
                 colorFill = colorBlue;
@@ -917,14 +987,14 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_star('left', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_star('left', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_star('left', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'left')
+                draw_star('left', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                draw_star('left', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                draw_star('left', 'outline', colorFill, colorFixDot);
             else
-                draw_star('left', 'solid', colorFill, 'none')
+                draw_star('left', 'solid', colorFill, 'none');
             end
         elseif strcmp(right(1), 'star')
             if strcmp(right(2), 'blue')
@@ -935,12 +1005,12 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_star('right', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_star('right', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_star('right', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'right')
+                draw_star('right', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                draw_star('right', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                draw_star('right', 'outline', colorFill, colorFixDot);
             else
                 draw_star('right', 'solid', colorFill, 'none')
             end
@@ -953,17 +1023,17 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_star('top', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_star('top', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_star('top', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'top')
+                draw_star('top', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'top')
+                draw_star('top', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
+                draw_star('top', 'outline', colorFill, colorFixDot);
             else
-                draw_star('top', 'solid', colorFill, 'none')
+                draw_star('top', 'solid', colorFill, 'none');
             end
         end
-        
+        %}
         if strcmp(left(1), 'triangle')
             if strcmp(left(2), 'blue')
                 colorFill = colorBlue;
@@ -973,14 +1043,14 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_triangle('left', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_triangle('left', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_triangle('left', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'left')
+                draw_triangle('left', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                draw_triangle('left', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                draw_triangle('left', 'outline', colorFill, colorFixDot);
             else
-                draw_triangle('left', 'solid', colorFill, 'none')
+                draw_triangle('left', 'solid', colorFill, 'none');
             end
         elseif strcmp(right(1), 'triangle')
             if strcmp(right(2), 'blue')
@@ -991,14 +1061,14 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_triangle('right', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_triangle('right', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_triangle('right', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'right')
+                draw_triangle('right', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                draw_triangle('right', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                draw_triangle('right', 'outline', colorFill, colorFixDot);
             else
-                draw_triangle('right', 'solid', colorFill, 'none')
+                draw_triangle('right', 'solid', colorFill, 'none');
             end
         else
             if strcmp(top(2), 'blue')
@@ -1009,14 +1079,14 @@ function set_shifting()
                 colorFill = colorRed;
             end
             
-            if strcmp(outerColor, 'looking')
-                draw_triangle('top', 'outline', colorFill, colorWhite)
-            elseif strcmp(outerColor, 'correct')
-                draw_triangle('top', 'outline', colorFill, colorCyan)
-            elseif strcmp(outerColor, 'incorrect')
-                draw_triangle('top', 'outline', colorFill, colorFixDot)
+            if strcmp(status, 'looking') && strcmp(spot, 'top')
+                draw_triangle('top', 'outline', colorFill, colorWhite);
+            elseif strcmp(status, 'correct') && strcmp(spot, 'top')
+                draw_triangle('top', 'outline', colorFill, colorCyan);
+            elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
+                draw_triangle('top', 'outline', colorFill, colorFixDot);
             else
-                draw_triangle('top', 'solid', colorFill, 'none')
+                draw_triangle('top', 'solid', colorFill, 'none');
             end
         end
         
