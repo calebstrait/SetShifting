@@ -24,13 +24,21 @@ function set_shifting()
     % -------------- Global variables -------------- %
     % ---------------------------------------------- %
     
+    % /////////////////////////////////////////////////////////////////// %
+    % /////////////////////////////////////////////////////////////////// %
+    % /////////////////////////////////////////////////////////////////// %
+    % /////////////////////////////////////////////////////////////////// %
+    
     % Frequently changed variables.
     numCorrectToShift = 10;         % Number of correct trials before shift occurs.
-    experimentType    = 'reversal';  % Values: 'intraSS', 'extraSS', or 'reversal'.
-    numberOfColors    = 3;          % How many different colors to use.
-    numberOfShapes    = 3;          % How many different shapes to use.
+    experimentType    = 'extraSS';  % Values: 'intraSS', 'extraSS', or 'reversal'. NOTE: DON'T USE REVERSAL!
     sessionType       = 'behavior'; % Values: 'behavior' or 'recording'.
     trackedEye        = 2;          % The eye that is being tracked (left: 1, right: 2).
+    
+    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
+    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
+    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
+    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
     
     % Colors.
     colorBackground = [0 0 0];
@@ -92,7 +100,11 @@ function set_shifting()
     corrAnsObject   = struct([]);
     currTrial       = 0;
     dimension       = [{'color'}, {'shape'}];
+    intraSSDim      = '';
     numCorrTrials   = 0;
+    numberOfColors    = 3;          % How many different colors to use.
+    numberOfShapes    = 3;          % How many different shapes to use.
+    positions       = [{'left'}, {'right'}, {'top'}];
     shapes          = [{'circle'}, {'star'}, {'triangle'}];
     trialCount      = 0;
     trialObject     = struct([]);
@@ -200,7 +212,7 @@ function set_shifting()
                     if checkFixBreak == false
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'double';
+                        area = 'left';
                         
                         return;
                     end
@@ -215,7 +227,7 @@ function set_shifting()
                     if checkFixBreak == false
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'double';
+                        area = 'right';
                         
                         return;
                     end
@@ -230,7 +242,7 @@ function set_shifting()
                     if checkFixBreak == false
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'double';
+                        area = 'top';
                         
                         return;
                     end
@@ -331,6 +343,7 @@ function set_shifting()
         else
             disp('Called draw_star with an illegal value for the "type" parameter');
         end
+        pause(2);
     end
     
     function draw_triangle(position, type, colorFill, colorOut)
@@ -403,22 +416,25 @@ function set_shifting()
         temp = struct([]);
         
         if strcmp(experimentType, 'intraSS')
-            % Choose a dimension.
-            randIndex = rand_int(1);
-            dim = dimension(randIndex);
+            % Choose a new dimension only on the first trial.
+            if trialCount == 0
+                % Choose a dimension.
+                randIndex = rand_int(1);
+                intraSSDim = dimension(randIndex);
+            end
             
             % Choose a value for that dimension.
             randValIndex = rand_int(2);
-            if strcmp(dim, 'color')
+            if strcmp(intraSSDim, 'color')
                 val = colors(randValIndex);
-            elseif strcmp(dim, 'shape')
+            elseif strcmp(intraSSDim, 'shape')
                 val = shapes(randValIndex);
             end
             
             % Set the correct answer type.
             temp(currTrial).type  = 'intraSS';
-            temp(currTrial).dimension = dim;
-            temp(currTrial).value = val;
+            temp(currTrial).dimension = char(intraSSDim);
+            temp(currTrial).value = char(val);
         elseif strcmp(experimentType, 'extraSS')
             % Choose a dimension.
             randIndex = rand_int(1);
@@ -434,16 +450,18 @@ function set_shifting()
             
             % Set the correct answer type.
             temp(currTrial).type  = 'extraSS';
-            temp(currTrial).dimension = dim;
-            temp(currTrial).value = val;
+            temp(currTrial).dimension = char(dim);
+            temp(currTrial).value = char(val);
+        % THIS PART BELOW IS NOT CURRENTLY WORKING.
         elseif strcmp(experimentType, 'reversal')
             randValIndex1 = rand_int(2);
             randValIndex2 = rand_int(2);
-            
+
             % Choose a correct answer value for the reversal experiment.
             tempColor = colors(randValIndex1);
             tempShape = shapes(randValIndex2);
             val = strcat(char(tempShape), ';', char(tempColor));
+            
             
             % Set the correct answer type.
             temp(currTrial).type  = 'reversal';
@@ -460,24 +478,41 @@ function set_shifting()
     function stimuli = generate_trial_stimuli()
         temp = struct([]);
         
-%         if strcmp(experimentType, 'intraSS')
-%             % Set the trial values.
-%             temp(currTrial).left  = ;
-%             temp(currTrial).right = ;
-%             temp(currTrial).top = ;
-%         elseif strcmp(experimentType, 'extraSS')
-%             % Set the trial values.
-%             temp(currTrial).left  = ;
-%             temp(currTrial).right = ;
-%             temp(currTrial).top = ;
-%         elseif strcmp(experimentType, 'reversal')
-%             % Set the trial values.
-%             temp(currTrial).left  = ;
-%             temp(currTrial).right = ;
-%             temp(currTrial).top = ;
-%         else
-%             disp('Error in generate_trial_stimuli.');
-%         end
+        if strcmp(experimentType, 'reversal')
+            % THIS CONDITION NOT CURRENTLY SUPPORTED.
+        else
+            % Find left stimulus value.
+            randIndex1 = rand_int(2);
+            leftValSub1 = char(shapes(randIndex1));
+            shapes(randIndex1) = [];
+            randIndex2 = rand_int(2);
+            leftValSub2 = char(colors(randIndex2));
+            colors(randIndex2) = [];
+            leftVal = strcat(leftValSub1, ';', leftValSub2);
+            
+            % Find right stimulus value.
+            randIndex1 = rand_int(1);
+            rightValSub1 = char(shapes(randIndex1));
+            shapes(randIndex1) = [];
+            randIndex2 = rand_int(1);
+            rightValSub2 = char(colors(randIndex2));
+            colors(randIndex2) = [];
+            rightVal = strcat(rightValSub1, ';', rightValSub2);
+            
+            % Find top stimulus value.
+            topValSub1 = char(shapes(1));
+            topValSub2 = char(colors(1));
+            topVal = strcat(topValSub1, ';', topValSub2);
+            
+            % Set the trial values: '<shape>;<color>'.
+            temp(currTrial).left  = leftVal;
+            temp(currTrial).right = rightVal;
+            temp(currTrial).top = topVal;
+        end
+        
+        % Reset these global variables. MAKE THIS BETTER.
+        colors = [{'blue'}, {'green'}, {'red'}];
+        shapes = [{'circle'}, {'star'}, {'triangle'}];
         
         stimuli = temp;
     end
@@ -615,17 +650,48 @@ function set_shifting()
             if trialCount == 0
                 corrAnsObject = generate_correct_answer;
             end
-
+            
             % Reset correct answer if shift needs to occur.
             if numCorrTrials == numCorrectToShift
                 corrAnsObject = generate_correct_answer;
             end
-                
+            
             % Check experiment type.
             if strcmp(experimentType, 'intraSS')
                 trialObject = generate_trial_stimuli;
+                
+                if strcmp(sessionType, 'behavior')
+                    unstaggered_stimuli('none');
+                    
+                    [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
+                    
+                    if fixatingOnTarget
+                        unstaggered_stimuli('correct');
+                        pause(2);
+                        disp(area);
+                    end
+                else
+                    % THIS PORTION CURRENTLY NOT WORKING.
+                    staggered_stimuli;
+                end
             elseif strcmp(experimentType, 'extraSS')
                 trialObject = generate_trial_stimuli;
+                
+                if strcmp(sessionType, 'behavior')
+                    unstaggered_stimuli('none');
+                    
+                    [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
+                    
+                    if fixatingOnTarget
+                        unstaggered_stimuli('correct');
+                        pause(2);
+                        disp(area);
+                    end
+                else
+                    % THIS PORTION CURRENTLY NOT WORKING.
+                    staggered_stimuli;
+                end
+            % REVERSAL CURRENTLY NOT WORKING.
             elseif strcmp(experimentType, 'reversal')
                 trialObject = generate_trial_stimuli;
             else
@@ -776,8 +842,185 @@ function set_shifting()
         %}
     end
 
-    function unstaggered_stimuli(ruleType)
+    function unstaggered_stimuli(outerColor)
+        left = strsplit(trialObject(currTrial).left, ';');
+        right = strsplit(trialObject(currTrial).right, ';');
+        top = strsplit(trialObject(currTrial).top, ';');
         
+        Screen('FillOval', window, colorBackground, [centerX - dotRadius + fixAdj; ...
+                                                     centerY - dotRadius; ...
+                                                     centerX + dotRadius - fixAdj; ...
+                                                     centerY + dotRadius]);
+        
+        if strcmp(left(1), 'circle')
+            if strcmp(left(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(left(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_circle('left', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_circle('left', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_circle('left', 'outline', colorFill, colorFixDot)
+            else
+                draw_circle('left', 'solid', colorFill, 'none')
+            end
+        elseif strcmp(right(1), 'circle')
+            if strcmp(right(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(right(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_circle('right', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_circle('right', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_circle('right', 'outline', colorFill, colorFixDot)
+            else
+                draw_circle('right', 'solid', colorFill, 'none')
+            end
+        else
+            if strcmp(top(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(top(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_circle('top', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_circle('top', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_circle('top', 'outline', colorFill, colorFixDot)
+            else
+                draw_circle('top', 'solid', colorFill, 'none')
+            end
+        end
+        
+        if strcmp(left(1), 'star')
+            if strcmp(left(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(left(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_star('left', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_star('left', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_star('left', 'outline', colorFill, colorFixDot)
+            else
+                draw_star('left', 'solid', colorFill, 'none')
+            end
+        elseif strcmp(right(1), 'star')
+            if strcmp(right(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(right(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_star('right', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_star('right', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_star('right', 'outline', colorFill, colorFixDot)
+            else
+                draw_star('right', 'solid', colorFill, 'none')
+            end
+        else
+            if strcmp(top(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(top(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_star('top', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_star('top', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_star('top', 'outline', colorFill, colorFixDot)
+            else
+                draw_star('top', 'solid', colorFill, 'none')
+            end
+        end
+        
+        if strcmp(left(1), 'triangle')
+            if strcmp(left(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(left(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_triangle('left', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_triangle('left', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_triangle('left', 'outline', colorFill, colorFixDot)
+            else
+                draw_triangle('left', 'solid', colorFill, 'none')
+            end
+        elseif strcmp(right(1), 'triangle')
+            if strcmp(right(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(right(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_triangle('right', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_triangle('right', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_triangle('right', 'outline', colorFill, colorFixDot)
+            else
+                draw_triangle('right', 'solid', colorFill, 'none')
+            end
+        else
+            if strcmp(top(2), 'blue')
+                colorFill = colorBlue;
+            elseif strcmp(top(2), 'green')
+                colorFill = colorGreen;
+            else
+                colorFill = colorRed;
+            end
+            
+            if strcmp(outerColor, 'looking')
+                draw_triangle('top', 'outline', colorFill, colorWhite)
+            elseif strcmp(outerColor, 'correct')
+                draw_triangle('top', 'outline', colorFill, colorCyan)
+            elseif strcmp(outerColor, 'incorrect')
+                draw_triangle('top', 'outline', colorFill, colorFixDot)
+            else
+                draw_triangle('top', 'solid', colorFill, 'none')
+            end
+        end
+        
+        Screen('Flip', window);
     end
 end
 
