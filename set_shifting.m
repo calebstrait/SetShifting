@@ -24,6 +24,14 @@ function set_shifting()
     % -------------- Global variables -------------- %
     % ---------------------------------------------- %
     
+    % Frequently changed variables.
+    numCorrectToShift = 10;         % Number of correct trials before shift occurs.
+    experimentType    = 'intraSS';  % Values: 'intraSS', 'extraSS', or 'reversal'.
+    numberOfColors    = 3;          % How many different colors to use.
+    numberOfShapes    = 3;          % How many different shapes to use.
+    sessionType       = 'behavior'; % Values: 'behavior' or 'recording'.
+    trackedEye        = 2;          % The eye that is being tracked (left: 1, right: 2).
+    
     % Colors.
     colorBackground = [0 0 0];
     colorFixDot     = [255 255 0];
@@ -33,22 +41,16 @@ function set_shifting()
     colorRed        = [255 30 24];
     colorWhite      = [255 255 255];
     
-    % Coordinates.
-    centerX         = 512;                % X pixel coordinate for the screen center.
-    centerY         = 434;                % Y pixel coordinate for the screen center.
-    hfWidth         = 88;                 % Half the width of the fixation boxes.
+    % Basic coordinates.
+    centerX         = 512;          % X pixel coordinate for the screen center.
+    centerY         = 434;          % Y pixel coordinate for the screen center.
+    hfWidth         = 88;           % Half the width of the fixation boxes.
     
-    % Values to calculate fixation box.
-    fixBoundXMax    = centerX + hfWidth;  % Max x distance from fixation point to fixate.
-    fixBoundXMin    = centerX - hfWidth;  % Min x distance from fixation point to fixate.
-    fixBoundYMax    = centerY + hfWidth;  % Max y distance from fixation point to fixate.
-    fixBoundYMin    = centerY - hfWidth;  % Mix y distance from fixation point to fixate.
-    
-    % Values to calculate fixation boxes on all sides.
-    topBoundXMax    = centerX + hfWidth;
-    topBoundXMin    = centerX - hfWidth;
-    topBoundYMax    = centerY - 108;
-    topBoundYMin    = centerY - 284;
+    % Values to calculate fixation boxes.
+    fixBoundXMax    = centerX + hfWidth;
+    fixBoundXMin    = centerX - hfWidth;
+    fixBoundYMax    = centerY + hfWidth;
+    fixBoundYMin    = centerY - hfWidth;
     leftBoundXMax   = centerX - 108;
     leftBoundXMin   = centerX - 284;
     leftBoundYMax   = centerY + 176;
@@ -57,31 +59,25 @@ function set_shifting()
     rightBoundXMin  = centerX + 108;
     rightBoundYMax  = centerY + 176;
     rightBoundYMin  = centerY;
+    topBoundXMax    = centerX + hfWidth;
+    topBoundXMin    = centerX - hfWidth;
+    topBoundYMax    = centerY - 108;
+    topBoundYMin    = centerY - 284;
     
-    centerShift         = 196;     % Dist. from fix. dot to center of other fix. squares.
+    % Other Coordinate variables.
+    centerShift         = 196;  % Dist. from fix. dot to center of other fix. squares.
     circleAdj           = 22;
     circleBorderHeight  = 11;
     circleBorderWidth   = 11;
+    dotRadius           = 10;
     fixAdj              = 1;
     starBorderWidth     = 30;
     starHfWidth         = hfWidth + 10;
     starShift           = centerShift - 6;
     triAdj              = 30;
     
-    % Values to draw star.
-    starBottomInX   = 35;
-    starBottomInY   = 18;
-    starBottomMid   = 45;
-    starSpacerFloor = 58;   
-    starSpacerCeil  = 25;
-    starTopInner    = 20;
-    
     % References.
     monkeyScreen    = 1;       % Number of the screen the monkey sees.
-    
-    % Stimuli.
-    dotRadius       = 10;      % Radius of the fixation dot.
-    starOutline     = 10;      % Width of star outline.
     
     % Times.
     feedbackTime    = 0.4;     % Duration of the error state.
@@ -92,7 +88,10 @@ function set_shifting()
     timeToSaccade   = intmax;  % Time allowed for monkey to make a choice.
     
     % Trial.
+    corrAnsObject   = struct([]);
+    numCorrTrials   = 0;
     trialCount      = 0;
+    trialObject     = struct([]);
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -100,6 +99,9 @@ function set_shifting()
     
     % Window.
     window = setup_window;
+    
+    % Eyelink.
+    setup_eyelink;
     
     % ---------------------------------------------- %
     % ------------ Main experiment loop ------------ %
@@ -112,7 +114,6 @@ function set_shifting()
         
         run_single_trial;
         trialCount = trialCount + 1;
-        % print_stats;
     end
     
     Screen('Close', window);
@@ -227,6 +228,8 @@ function set_shifting()
                         return;
                     end
                 end
+            else
+                disp('Fixation being checked with an illegal value for the "type" parameter.');
             end
         end
         
@@ -392,8 +395,8 @@ function set_shifting()
     function [xCoord, yCoord] = get_eye_coords()
         sampledPosition = Eyelink('NewestFloatSample');
         
-        xCoord = centerX; %sampledPosition.gx(trackedEye);
-        yCoord = centerY; %sampledPosition.gy(trackedEye);
+        xCoord = sampledPosition.gx(trackedEye);
+        yCoord = sampledPosition.gy(trackedEye);
     end
     
     % Checks to see what key was pressed.
@@ -505,9 +508,60 @@ function set_shifting()
     function run_single_trial()
         % Fixation dot appears.
         draw_fixation_point(colorFixDot);
-        draw_star('left', 'outline', colorBlue, colorCyan);
-        draw_triangle('top', 'outline', colorBlue, colorCyan);
-        draw_circle('right', 'outline', colorBlue, colorCyan);
+        
+        % Check for fixation.
+        [fixating, ~] = check_fixation('single', minFixTime, timeToFix);
+        
+        if fixating
+            if strcmp(experimentType, 'intraSS')
+                
+            elseif strcmp(experimentType, 'extraSS')
+            elseif strcmp(experimentType, 'reversal')
+            else
+                disp('WARNING:');
+                disp('---------------------------------------------------------------------------');
+                disp('Experiment started with an illegal value for the "experimentType" parameter.');
+            end
+        else
+            % Redo this trial since monkey failed to start it.
+            run_single_trial;
+        end
+    end
+    
+    % Sets up the Eyelink system.
+    function setup_eyelink()
+        abortSetup = false;
+        setupMode = 2;
+        
+        % Connect Eyelink to computer if unconnected.
+        if ~Eyelink('IsConnected')
+            Eyelink('Initialize');
+        end
+        
+        % Start recording eye position.
+        Eyelink('StartRecording');
+        
+        % Preferences (not sure I want to keep).
+        Eyelink('Command', 'randomize_calibration_order = NO');
+        Eyelink('Command', 'force_manual_accept = YES');
+        
+        Eyelink('StartSetup');
+        
+        % Wait until Eyelink actually enters setup mode.
+        while ~abortSetup && Eyelink('CurrentMode') ~= setupMode
+            [keyIsDown, ~, keyCode] = KbCheck;
+            
+            if keyIsDown && keyCode(KbName('ESCAPE'))
+                abortSetup = true;
+                disp('Aborted while waiting for Eyelink!');
+            end
+        end
+        
+        % Put Eyelink in output mode.
+        Eyelink('SendKeyButton', double('o'), 0, 10);
+        
+        % Start recording.
+        Eyelink('SendKeyButton', double('o'), 0, 10);
     end
     
     % Sets up a new window and sets preferences for it.
@@ -521,14 +575,17 @@ function set_shifting()
         % Setup a screen for displaying stimuli for this session.
         window = Screen('OpenWindow', monkeyScreen, colorBackground);
     end
-
+    
+    function staggered_stimuli()
+    end
+    
     function points = star_points(centerColVector, armLength)
-        innerPoints   = zeros(2, 5);       % Preallocate space for inner points.
-        outerPoints   = zeros(2, 5);       % Preallocate space for outer points.
-        rotationAngle = 0;                 % Rotation angle in degrees.
-        rotationInner = 108;               % First rotation angle (deg) for inner points.
-        rotationOuter = 72;                % Rotation angle (deg) between points.
-        starPoints    = zeros(11, 2);      % Preallocate space for all star points.
+        innerPoints   = zeros(2, 5);        % Preallocate space for inner points.
+        outerPoints   = zeros(2, 5);        % Preallocate space for outer points.
+        rotationAngle = 0;                  % Rotation angle in degrees.
+        rotationInner = 108;                % First rotation angle (deg) for inner points.
+        rotationOuter = 72;                 % Rotation angle (deg) between points.
+        starPoints    = zeros(11, 2);       % Preallocate space for all star points.
         topPoint      = [0; ...
                          -armLength];       % Topmost point of outer star points.
         topPointInner = [0; ...
@@ -606,5 +663,9 @@ function set_shifting()
             pause(2);
         end
         %}
+    end
+
+    function unstaggered_stimuli(ruleType)
+        
     end
 end
