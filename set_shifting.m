@@ -24,22 +24,27 @@ function set_shifting(monkeysInitial)
     % -------------- Global variables -------------- %
     % ---------------------------------------------- %
     
-    % /////////////////////////////////////////////////////////////////// %
-    % /////////////////////////////////////////////////////////////////// %
-    % /////////////////////////////////////////////////////////////////// %
-    % /////////////////////////////////////////////////////////////////// %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@                                @@@@@@@ %
+    % @@@@@@@  FREQUENTLY CHANGED VARIABLES  @@@@@@@ %
+    % @@@@@@@                                @@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-    % Frequently changed variables.
-    numCorrectToShift = 3;             % Number of correct trials before shift occurs.
-    experimentType    = 'colorShift';  % Values: 'colorShift', 'shapeShift', 'intraSS', 'extraSS', or 'reversal'.
-    sessionType       = 'behavior';    % Values: 'behavior' or 'recording'.
-    rewardDuration    = 1.2;           % How long valve is open.
-    trackedEye        = 2;             % The eye that is being tracked (left: 1, right: 2).
+      numCorrectToShift = 10;             % Num correct trials before shift.
+      rewardDuration    = 1.2;            % How long the juicer is open.
+      trackedEye        = 1;              % Tracked eye (left: 1, right: 2).
+      sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
+      experimentType    = 'colorShift';   % Value: 'colorShift'.
     
-    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
-    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
-    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
-    % \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
+    % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
     % Colors.
     colorBackground = [0 0 0];
@@ -51,30 +56,33 @@ function set_shifting(monkeysInitial)
     colorWhite      = [255 255 255];
     
     % Basic coordinates.
-    centerX         = 512;          % X pixel coordinate for the screen center.
-    centerY         = 434;          % Y pixel coordinate for the screen center.
-    hfWidth         = 88;           % Half the width of the fixation boxes.
+    centerX         = 512;            % X pixel coordinate for the screen center.
+    centerY         = 384;            % Y pixel coordinate for the screen center.
+    hfWidth         = 88;             % Half the width of the fixation boxes.
     
     % Values to calculate fixation boxes.
     fixBoundXMax    = centerX + hfWidth;
     fixBoundXMin    = centerX - hfWidth;
     fixBoundYMax    = centerY + hfWidth;
     fixBoundYMin    = centerY - hfWidth;
-    leftBoundXMax   = centerX - 108;
-    leftBoundXMin   = centerX - 284;
-    leftBoundYMax   = centerY + 176;
-    leftBoundYMin   = centerY;
-    rightBoundXMax  = centerX + 284;
-    rightBoundXMin  = centerX + 108;
-    rightBoundYMax  = centerY + 176;
-    rightBoundYMin  = centerY;
+    
+    leftBoundXMax   = centerX - 152;
+    leftBoundXMin   = centerX - 328;
+    leftBoundYMax   = centerY + 220;
+    leftBoundYMin   = centerY + 44;
+    
+    rightBoundXMax  = centerX + 328;
+    rightBoundXMin  = centerX + 152;
+    rightBoundYMax  = centerY + 220;
+    rightBoundYMin  = centerY + 44;
+    
     topBoundXMax    = centerX + hfWidth;
     topBoundXMin    = centerX - hfWidth;
-    topBoundYMax    = centerY - 108;
-    topBoundYMin    = centerY - 284;
+    topBoundYMax    = centerY - 152;
+    topBoundYMin    = centerY - 328;
     
     % Other Coordinate variables.
-    centerShift         = 196;  % Dist. from fix. dot to center of other fix. squares.
+    centerShift         = 240;  % Dist. from fix. dot to center of other fix. squares.
     circleAdj           = 22;
     circleBorderHeight  = 11;
     circleBorderWidth   = 11;
@@ -994,22 +1002,6 @@ function set_shifting(monkeysInitial)
         end
 
         points = starPoints;
-        
-        % Output for testing.
-        %{
-        disp(starPoints);
-        axis([-50, 50, -50, 50]);
-        hold on;
-        plot(centerColVector(1, 1), centerColVector(2, 1), '+');
-        for i = 1:11
-            if i ~= 11
-                plot(starPoints(i, 1), starPoints(i, 2), 'b.');
-            else
-                plot(starPoints(i, 1), starPoints(i, 2), 'g.');
-            end
-            WaitSecs(2);
-        end
-        %}
     end
 
     function unstaggered_stimuli(outerColor)
