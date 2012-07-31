@@ -112,12 +112,18 @@ function set_shifting(monkeysInitial)
     trialCount      = 0;
     trialObject     = struct([]);
     
+    % Trial data.
+    chosenPosition  = '';
+    rewarded        = '';
+    shifts          = 0;
+    trialOutcome    = '';
+    
     % Color shift trial info.
-    chosenShape   = '';
-    colorOne      = '';
-    colorTwo      = '';
-    genColorShift = 0;
-    setUnits      = 0;  % Number of times a set shift unit has occurred.
+    chosenShape     = '';
+    colorOne        = '';
+    colorTwo        = '';
+    genColorShift   = 0;
+    setUnits        = 0;  % Number of times a set shift unit has occurred.
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -138,16 +144,17 @@ function set_shifting(monkeysInitial)
     
     running = true;
     while running
+        % Listen for key presses.
         keyPress = key_check;
         key_execute(keyPress);
         
         run_single_trial;
         trialCount = trialCount + 1;
         print_stats();
-        pause(ITI);
+        WaitSecs(ITI);
     end
     
-    Screen('Close', window);
+    Screen('CloseAll');
     
     % ---------------------------------------------- %
     % ----------------- Functions ------------------ %
@@ -694,7 +701,7 @@ function set_shifting(monkeysInitial)
         while fileNum ~= 0
             if exist(filename, 'file') == 2
                 fileNum = fileNum + 1;
-                filename = [initial dateStr '.' cell num2str(fileNum) '.C.mat'];
+                filename = [initial dateStr '.' cell num2str(fileNum) '.SS.mat'];
             else
                 fileNum = 0;
             end
@@ -758,6 +765,9 @@ function set_shifting(monkeysInitial)
             % Reset correct answer if shift needs to occur.
             if mod(numCorrTrials, numCorrectToShift) == 0 && ...
                trialCount ~= 0
+                % Update shift counter.
+                shifts = shifts + 1;
+                    
                 % Increment the shift color shift counter.
                 if strcmp(experimentType, 'colorShift')
                     setUnits = setUnits + 1;
@@ -793,14 +803,39 @@ function set_shifting(monkeysInitial)
                             correctSpot = corrAnsObject(currTrial).correct;
 
                             if strcmp(area, correctSpot)
+                                % Display feedback stimuli and give reward.
                                 unstaggered_stimuli(strcat('correct', ';', area));
                                 reward(rewardDuration);
-                                pause(feedbackTime);
-
+                                WaitSecs(feedbackTime);
+                                
+                                % Update.
+                                chosenPosition = area;
                                 numCorrTrials = numCorrTrials + 1;
+                                rewarded = 'yes';
+                                trialOutcome = 'correct';
+                                
+                                % Save trial data.
+                                send_and_save;
+                                
+                                % Reset.
+                                corrAnsObject = struct([]);
+                                trialObject = struct([]);
                             else
+                                % Display feedback stimuli.
                                 unstaggered_stimuli(strcat('incorrect', ';', area));
-                                pause(feedbackTime);
+                                WaitSecs(feedbackTime);
+                                
+                                % Update.
+                                chosenPosition = area;
+                                rewarded = 'no';
+                                trialOutcome = 'incorrect';
+                                
+                                % Save trial data.
+                                send_and_save;
+                                
+                                % Reset.
+                                corrAnsObject = struct([]);
+                                trialObject = struct([]);
                             end
                         end
                     end
@@ -815,6 +850,32 @@ function set_shifting(monkeysInitial)
             % Redo this trial since monkey failed to start it.
             run_single_trial;
         end
+    end
+    
+    % Saves trial data to a .mat file.
+    function send_and_save()
+        % Save variables to a .mat file.
+        data(currTrial).trial = currTrial;                   % The trial number for this trial.
+        data(currTrial).trialOutcome = trialOutcome;         % Whether the choice was correct or not.
+        data(currTrial).choiceMade = chosenPosition;         % Location on screen that was chosen.
+        data(currTrial).trialStimuli = trialObject;          % All stimuli and their positions.
+        data(currTrial).correctChoiceInfo = corrAnsObject;   % Info about the correct choice.
+        data(currTrial).rewarded = rewarded;                 % Whether or not a reward was given.
+        data(currTrial).rewardDuration = rewardDuration;     % Duration that juicer was open.
+        data(currTrial).timeToFixate = timeToFix;            % Max allowed for all fixations.
+        data(currTrial).minFixTimeToStart = minFixTime;      % Fixatin time needed to start task.
+        data(currTrial).holdFixTime = holdFixTime;           % Fixation duration to select an object.
+        data(currTrial).feedbackTime = feedbackTime;         % Feedback duration.
+        data(currTrial).ITI = ITI;                           % Intertrial interval.
+        data(currTrial).experimentType = experimentType;     % What version of the task this session was.
+        data(currTrial).sessionType = sessionType;           % Whether this was behavior or recording.
+        data(currTrial).correctToShift = numCorrectToShift;  % Number of correct trials before a shift.
+        data(currTrial).numberOfShifts = shifts;             % Total number of shifts made.
+        data(currTrial).trackedEye = trackedEye;             % The eye being tracked.
+        data(currTrial).colors = colors;                     % All the possible colors used.
+        data(currTrial).shapes = shapes;                     % All the possible shapes used.
+        
+        eval(saveCommand);
     end
     
     % Sets up the Eyelink system.
@@ -946,7 +1007,7 @@ function set_shifting(monkeysInitial)
             else
                 plot(starPoints(i, 1), starPoints(i, 2), 'g.');
             end
-            pause(2);
+            WaitSecs(2);
         end
         %}
     end
