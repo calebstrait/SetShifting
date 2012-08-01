@@ -32,7 +32,7 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift = 2;              % Num correct trials before shift.
+      numCorrectToShift = 10;              % Num correct trials before shift.
       rewardDuration    = 0.12;           % How long the juicer is open.
       trackedEye        = 2;              % Tracked eye (left: 1, right: 2).
       sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
@@ -124,6 +124,7 @@ function set_shifting(monkeysInitial)
     currTrial          = 0;
     currTrialAtError   = 1;
     dimension          = [{'color'}, {'shape'}];
+    lastCorrPos        = '';
     passedTrial        = true;
     inHoldingState     = true;
     numCorrTrials      = 0;
@@ -472,6 +473,7 @@ function set_shifting(monkeysInitial)
                 % Choose a color randomly from the total color pool w/o replacement.
                 randValIndex1 = rand_int(2);
                 color1 = char(colors(randValIndex1));
+                % Delete the color just picked from the pool.
                 colors(randValIndex1) = [];
 
                 % Choose another color randomly from the total color pool.
@@ -497,7 +499,7 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).value = color1;
                 temp(currTrial).shape = shape;
                 
-                % Reset trigger.
+                % Reset trigger that decides if a full color shift occurs.
                 genColorShift = 0;
             else
                 tempColor = colorOne;
@@ -618,41 +620,134 @@ function set_shifting(monkeysInitial)
             % Note the location of the correct choice.
             corrAnsObject(currTrial).correct = correctSpot;
         elseif strcmp(experimentType, 'colorShift')
-            tempColors = [{colorOne}, {colorTwo}, {colorTwo}];
-            
-            % Find left stimulus value.
-            randIndex1 = rand_int(2);
-            leftValSub = char(tempColors(randIndex1));
-            tempColors(randIndex1) = [];
-            
-            % Find right stimulus value.
-            randIndex2 = rand_int(1);
-            rightValSub = char(tempColors(randIndex2));
-            tempColors(randIndex2) = [];
-            
-            % Find top stimulus value.
-            topValSub = char(tempColors(1));
-            
-            leftVal = strcat(chosenShape, ';', leftValSub);
-            rightVal = strcat(chosenShape, ';', rightValSub);
-            topVal = strcat(chosenShape, ';', topValSub);
-            
-            % Set the trial values: '<shape>;<color>'.
-            temp(currTrial).left  = leftVal;
-            temp(currTrial).right = rightVal;
-            temp(currTrial).top = topVal;
-            
-            % Determin where the correct choice is located.
-            if strcmp(leftValSub, correctVal)
-                correctSpot = 'left';
-            elseif strcmp(rightValSub, correctVal)
-                correctSpot = 'right';
-            elseif strcmp(topValSub, correctVal)
-                correctSpot = 'top';
+            % Just generate a random location for the correct choice.
+            if currTrial == 1
+                tempColors = [{colorOne}, {colorTwo}, {colorTwo}];
+                
+                % Find left stimulus value.
+                randIndex1 = rand_int(2);
+                leftValSub = char(tempColors(randIndex1));
+                tempColors(randIndex1) = [];
+
+                % Find right stimulus value.
+                randIndex2 = rand_int(1);
+                rightValSub = char(tempColors(randIndex2));
+                tempColors(randIndex2) = [];
+
+                % Find top stimulus value.
+                topValSub = char(tempColors(1));
+
+                leftVal = strcat(chosenShape, ';', leftValSub);
+                rightVal = strcat(chosenShape, ';', rightValSub);
+                topVal = strcat(chosenShape, ';', topValSub);
+
+                % Set the trial values: '<shape>;<color>'.
+                temp(currTrial).left  = leftVal;
+                temp(currTrial).right = rightVal;
+                temp(currTrial).top = topVal;
+                
+                % Determin where the correct choice is located.
+                if strcmp(leftValSub, correctVal)
+                    correctSpot = 'left';
+                elseif strcmp(rightValSub, correctVal)
+                    correctSpot = 'right';
+                elseif strcmp(topValSub, correctVal)
+                    correctSpot = 'top';
+                end
+                
+                % Note the location of the correct choice.
+                corrAnsObject(currTrial).correct = correctSpot;
+                lastCorrPos = correctSpot;
+            % Make sure the correct choice is not in the same location.
+            else
+                tempColors = [{colorTwo}, {colorTwo}];
+                leftSubVal = '';
+                rightSubVal = '';
+                topSubVal = '';
+                correctSpot = '';
+                
+                % Choose new correct position from 2 that it wasn't last time.
+                if strcmp(lastCorrPos, 'left')
+                    tempArray = [{'right'}, {'top'}];
+                    randIndex1 = rand_int(1);
+                    newCorrPosition = char(tempArray(randIndex1));
+                    
+                    if strcmp(newCorrPosition, 'right')
+                        rightSubVal = colorOne;
+                        randIndex2 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex2));
+                        tempColors(randIndex2) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'right';
+                    else
+                        topSubVal = colorOne;
+                        randIndex3 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex3));
+                        tempColors(randIndex3) = [];
+                        rightSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'top';
+                    end
+                elseif strcmp(lastCorrPos, 'right')
+                    tempArray = [{'left'}, {'top'}];
+                    randIndex1 = rand_int(1);
+                    newCorrPosition = char(tempArray(randIndex1));
+                    
+                    if strcmp(newCorrPosition, 'left')
+                        leftSubVal = colorOne;
+                        randIndex2 = rand_int(1);
+                        rightSubVal = char(tempColors(randIndex2));
+                        tempColors(randIndex2) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'left';
+                    else
+                        topSubVal = colorOne;
+                        randIndex3 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex3));
+                        tempColors(randIndex3) = [];
+                        rightSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'top';
+                    end
+                elseif strcmp(lastCorrPos, 'top')
+                    tempArray = [{'left'}, {'right'}];
+                    randIndex1 = rand_int(1);
+                    newCorrPosition = char(tempArray(randIndex1));
+                    
+                    if strcmp(newCorrPosition, 'left')
+                        leftSubVal = colorOne;
+                        randIndex2 = rand_int(1);
+                        rightSubVal = char(tempColors(randIndex2));
+                        tempColors(randIndex2) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'left';
+                    else
+                        rightSubVal = colorOne;
+                        randIndex3 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex3));
+                        tempColors(randIndex3) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'right';
+                    end
+                end
+                
+                leftVal = strcat(chosenShape, ';', leftSubVal);
+                rightVal = strcat(chosenShape, ';', rightSubVal);
+                topVal = strcat(chosenShape, ';', topSubVal);
+
+                % Set the trial values: '<shape>;<color>'.
+                temp(currTrial).left  = leftVal;
+                temp(currTrial).right = rightVal;
+                temp(currTrial).top = topVal;
+
+                % Note the location of the correct choice.
+                corrAnsObject(currTrial).correct = correctSpot;
+                lastCorrPos = correctSpot;
             end
-            
-            % Note the location of the correct choice.
-            corrAnsObject(currTrial).correct = correctSpot;
         end
         
         % Reset these global variables. MAKE THIS BETTER.
