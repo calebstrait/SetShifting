@@ -110,7 +110,8 @@ function set_shifting(monkeysInitial)
     
     % Times.
     feedbackTime       = 0.4;     % Duration of the error state.
-    holdFixTime        = 0.5;     % Duration to hold fixation before choosing.
+    chooseHoldFixTime  = 0.2;     % Duration fixation must be held while targets are on.
+    holdFixTime        = 0.75;     % Duration to hold fixation before choosing.
     ITI                = 0.8;     % Intertrial interval.
     minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
     timeToFix          = intmax;  % Amount of time monkey is given to fixate.
@@ -122,6 +123,7 @@ function set_shifting(monkeysInitial)
     currBlockTrial     = 0;
     currTrial          = 0;
     dimension          = [{'color'}, {'shape'}];
+    inHoldingState     = true;
     numCorrTrials      = 0;
     shapes             = [{'circle'}, {'star'}, {'triangle'}];
     totalNumCorrTrials = 0;
@@ -168,6 +170,7 @@ function set_shifting(monkeysInitial)
         
         trialCount = trialCount + 1;
         currBlockTrial = currBlockTrial + 1;
+        inHoldingState = true;
         
         print_stats();
         WaitSecs(ITI);
@@ -828,50 +831,63 @@ function set_shifting(monkeysInitial)
                 if strcmp(sessionType, 'behavior')
                     unstaggered_stimuli('none;none');
                     
-                    fixatingOnTarget = false;
-                    while ~fixatingOnTarget
-                        % Check for fixation on any three targets.
-                        [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
+                    % Make sure fixation is held before a target is chosen.
+                    fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
+                                                    fixBoundYMin, fixBoundYMax, ...
+                                                    chooseHoldFixTime);
+                    
+                    if fixationBreak
+                        % Start trial over because fixation wasn't held.
+                        run_single_trial;
+                    else
+                        inHoldingState = false;
+                        unstaggered_stimuli('none;none');
+                        
+                        fixatingOnTarget = false;
+                        while ~fixatingOnTarget
+                            % Check for fixation on any three targets.
+                            [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
 
-                        if fixatingOnTarget
-                            % Fetch correct location.
-                            correctSpot = corrAnsObject(currTrial).correct;
+                            if fixatingOnTarget
+                                % Fetch correct location.
+                                correctSpot = corrAnsObject(currTrial).correct;
 
-                            if strcmp(area, correctSpot)
-                                % Display feedback stimuli and give reward.
-                                unstaggered_stimuli(strcat('correct', ';', area));
-                                reward(rewardDuration);
-                                WaitSecs(feedbackTime);
-                                
-                                % Update.
-                                chosenPosition = area;
-                                numCorrTrials = numCorrTrials + 1;
-                                rewarded = 'yes';
-                                totalNumCorrTrials = totalNumCorrTrials + 1;
-                                trialOutcome = 'correct';
-                                
-                                % Save trial data.
-                                send_and_save;
-                                
-                                % Reset.
-                                corrAnsObject = struct([]);
-                                trialObject = struct([]);
-                            else
-                                % Display feedback stimuli.
-                                unstaggered_stimuli(strcat('incorrect', ';', area));
-                                WaitSecs(feedbackTime);
-                                
-                                % Update.
-                                chosenPosition = area;
-                                rewarded = 'no';
-                                trialOutcome = 'incorrect';
-                                
-                                % Save trial data.
-                                send_and_save;
-                                
-                                % Reset.
-                                corrAnsObject = struct([]);
-                                trialObject = struct([]);
+                                if strcmp(area, correctSpot)
+                                    % Display feedback stimuli and give reward.
+                                    unstaggered_stimuli(strcat('correct', ';', area));
+                                    reward(rewardDuration);
+                                    WaitSecs(feedbackTime);
+
+                                    % Update.
+                                    chosenPosition = area;
+                                    numCorrTrials = numCorrTrials + 1;
+                                    rewarded = 'yes';
+                                    totalNumCorrTrials = totalNumCorrTrials + 1;
+                                    trialOutcome = 'correct';
+
+                                    % Save trial data.
+                                    send_and_save;
+
+                                    % Reset.
+                                    corrAnsObject = struct([]);
+                                    trialObject = struct([]);
+                                else
+                                    % Display feedback stimuli.
+                                    unstaggered_stimuli(strcat('incorrect', ';', area));
+                                    WaitSecs(feedbackTime);
+
+                                    % Update.
+                                    chosenPosition = area;
+                                    rewarded = 'no';
+                                    trialOutcome = 'incorrect';
+
+                                    % Save trial data.
+                                    send_and_save;
+
+                                    % Reset.
+                                    corrAnsObject = struct([]);
+                                    trialObject = struct([]);
+                                end
                             end
                         end
                     end
@@ -1041,10 +1057,17 @@ function set_shifting(monkeysInitial)
         right = strsplit(trialObject(currTrial).right, ';');
         top = strsplit(trialObject(currTrial).top, ';');
         
-        Screen('FillOval', window, colorBackground, [centerX - dotRadius + fixAdj; ...
+        if inHoldingState
+            Screen('FillOval', window, colorFixDot, [centerX - dotRadius + fixAdj; ...
                                                      centerY - dotRadius; ...
                                                      centerX + dotRadius - fixAdj; ...
                                                      centerY + dotRadius]);
+        else
+            Screen('FillOval', window, colorBackground, [centerX - dotRadius + fixAdj; ...
+                                                         centerY - dotRadius; ...
+                                                         centerX + dotRadius - fixAdj; ...
+                                                         centerY + dotRadius]);
+        end
         
         if strcmp(left(1), 'circle')
             if strcmp(left(2), 'blue')
