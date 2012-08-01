@@ -122,7 +122,9 @@ function set_shifting(monkeysInitial)
     currentAnswer      = '';
     currBlockTrial     = 0;
     currTrial          = 0;
+    currTrialAtError   = 1;
     dimension          = [{'color'}, {'shape'}];
+    passedTrial        = true;
     inHoldingState     = true;
     numCorrTrials      = 0;
     shapes             = [{'circle'}, {'star'}, {'triangle'}];
@@ -817,6 +819,7 @@ function set_shifting(monkeysInitial)
                 end
                 
                 corrAnsObject = generate_correct_answer;
+                disp(strcat('SHIFT', num2str(shifts)));
             end
             
             % Check experiment type.
@@ -826,23 +829,27 @@ function set_shifting(monkeysInitial)
             elseif strcmp(experimentType, 'intraSS') || ...
                    strcmp(experimentType, 'extraSS') || ...
                    strcmp(experimentType, 'colorShift')
-                trialObject = generate_trial_stimuli;
-                
+                % Only make new stimuli if the trial is passed.
+                if passedTrial
+                    trialObject = generate_trial_stimuli;
+                    disp(strcat('NEW STIMULI', num2str(currTrial)));
+                end
+
                 if strcmp(sessionType, 'behavior')
                     unstaggered_stimuli('none;none');
-                    
+
                     % Make sure fixation is held before a target is chosen.
                     fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
                                                     fixBoundYMin, fixBoundYMax, ...
                                                     chooseHoldFixTime);
-                    
+
                     if fixationBreak
                         % Start trial over because fixation wasn't held.
                         run_single_trial;
                     else
                         inHoldingState = false;
                         unstaggered_stimuli('none;none');
-                        
+
                         fixatingOnTarget = false;
                         while ~fixatingOnTarget
                             % Check for fixation on any three targets.
@@ -850,7 +857,13 @@ function set_shifting(monkeysInitial)
 
                             if fixatingOnTarget
                                 % Fetch correct location.
-                                correctSpot = corrAnsObject(currTrial).correct;
+                                if passedTrial
+                                    currTrialNumForObj = currTrial;
+                                else
+                                    currTrialNumForObj = currTrialAtError;
+                                end
+                                
+                                correctSpot = corrAnsObject(currTrialNumForObj).correct;
 
                                 if strcmp(area, correctSpot)
                                     % Display feedback stimuli and give reward.
@@ -861,32 +874,31 @@ function set_shifting(monkeysInitial)
                                     % Update.
                                     chosenPosition = area;
                                     numCorrTrials = numCorrTrials + 1;
+                                    passedTrial = true;
                                     rewarded = 'yes';
                                     totalNumCorrTrials = totalNumCorrTrials + 1;
                                     trialOutcome = 'correct';
 
                                     % Save trial data.
                                     send_and_save;
-
-                                    % Reset.
-                                    corrAnsObject = struct([]);
-                                    trialObject = struct([]);
                                 else
                                     % Display feedback stimuli.
                                     unstaggered_stimuli(strcat('incorrect', ';', area));
                                     WaitSecs(feedbackTime);
-
+                                    
+                                    % Only reset error trial tracker if this is the first error in a row.
+                                    if passedTrial
+                                        currTrialAtError = currTrial;
+                                    end
+                                    
                                     % Update.
                                     chosenPosition = area;
+                                    passedTrial = false;
                                     rewarded = 'no';
                                     trialOutcome = 'incorrect';
 
                                     % Save trial data.
                                     send_and_save;
-
-                                    % Reset.
-                                    corrAnsObject = struct([]);
-                                    trialObject = struct([]);
                                 end
                             end
                         end
@@ -1053,9 +1065,16 @@ function set_shifting(monkeysInitial)
         status = input(1);
         spot = input(2);
         
-        left = strsplit(trialObject(currTrial).left, ';');
-        right = strsplit(trialObject(currTrial).right, ';');
-        top = strsplit(trialObject(currTrial).top, ';');
+        % Make sure correct stimuli object index is used.
+        if passedTrial
+            currTrialNumForObj = currTrial;
+        else
+            currTrialNumForObj = currTrialAtError;
+        end
+        
+        left = strsplit(trialObject(currTrialNumForObj).left, ';');
+        right = strsplit(trialObject(currTrialNumForObj).right, ';');
+        top = strsplit(trialObject(currTrialNumForObj).top, ';');
         
         if inHoldingState
             Screen('FillOval', window, colorYellow, [centerX - dotRadius + fixAdj; ...
