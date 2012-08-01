@@ -88,56 +88,58 @@ function set_shifting(monkeysInitial)
     topBoundYMin    = centerY - 328 - fixAdjTTopSide;
     
     % Other Coordinate variables.
-    centerShift         = 240;  % Dist. from fix. dot to center of other fix. squares.
-    circleAdj           = 22;
-    circleBorderHeight  = 11;
-    circleBorderWidth   = 11;
-    dotRadius           = 10;
-    fixAdj              = 1;
-    starBorderWidth     = 30;
-    starHfWidth         = hfWidth + 10;
-    starShift           = centerShift - 6;
-    triAdj              = 30;
+    centerShift        = 240;  % Dist. from fix. dot to center of other fix. squares.
+    circleAdj          = 22;
+    circleBorderHeight = 11;
+    circleBorderWidth  = 11;
+    dotRadius          = 10;
+    fixAdj             = 1;
+    starBorderWidth    = 30;
+    starHfWidth        = hfWidth + 10;
+    starShift          = centerShift - 6;
+    triAdj             = 30;
     
     % References.
-    monkeyScreen    = 1;        % Number of the screen the monkey sees.
+    monkeyScreen       = 1;        % Number of the screen the monkey sees.
     
     % Saving.
-    data            = struct([]);          % Workspace variable where trial data is saved.
-    saveCommand     = NaN;                 % Command string that will save .mat files.         
-    setShiftingData = '/Data/SetShifting'; % Directory where .mat files are saved.
-    varName         = 'data';              % Name of the var to save in the workspace.
+    data               = struct([]);          % Workspace variable where trial data is saved.
+    saveCommand        = NaN;                 % Command string that will save .mat files.         
+    setShiftingData    = '/Data/SetShifting'; % Directory where .mat files are saved.
+    varName            = 'data';              % Name of the var to save in the workspace.
     
     % Times.
-    feedbackTime    = 0.4;     % Duration of the error state.
-    holdFixTime     = 0.5;     % Duration to hold fixation before choosing.
-    ITI             = 0.8;     % Intertrial interval.
-    minFixTime      = 0.1;     % Min time monkey must fixate to start trial.
-    timeToFix       = intmax;  % Amount of time monkey is given to fixate.
+    feedbackTime       = 0.4;     % Duration of the error state.
+    holdFixTime        = 0.5;     % Duration to hold fixation before choosing.
+    ITI                = 0.8;     % Intertrial interval.
+    minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
+    timeToFix          = intmax;  % Amount of time monkey is given to fixate.
     
     % Trial.
-    colors          = [{'blue'}, {'green'}, {'red'}];
-    corrAnsObject   = struct([]);
-    currentAnswer   = '';
-    currTrial       = 0;
-    dimension       = [{'color'}, {'shape'}];
-    numCorrTrials   = 0;
-    shapes          = [{'circle'}, {'star'}, {'triangle'}];
-    trialCount      = 0;
-    trialObject     = struct([]);
+    colors             = [{'blue'}, {'green'}, {'red'}];
+    corrAnsObject      = struct([]);
+    currentAnswer      = '';
+    currBlockTrial     = 0;
+    currTrial          = 0;
+    dimension          = [{'color'}, {'shape'}];
+    numCorrTrials      = 0;
+    shapes             = [{'circle'}, {'star'}, {'triangle'}];
+    totalNumCorrTrials = 0;
+    trialCount         = 0;
+    trialObject        = struct([]);
     
     % Trial data.
-    chosenPosition  = '';
-    rewarded        = '';
-    shifts          = 0;
-    trialOutcome    = '';
+    chosenPosition     = '';
+    rewarded           = '';
+    shifts             = 0;
+    trialOutcome       = '';
     
     % Color shift trial info.
-    chosenShape     = '';
-    colorOne        = '';
-    colorTwo        = '';
-    genColorShift   = 0;
-    setUnits        = 0;  % Number of times a set shift unit has occurred.
+    chosenShape        = '';
+    colorOne           = '';
+    colorTwo           = '';
+    genColorShift      = 0;
+    setUnits           = 0;  % Number of times a set shift unit has occurred.
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -162,13 +164,13 @@ function set_shifting(monkeysInitial)
         keyPress = key_check;
         key_execute(keyPress);
         
-        %draw_fixation_bounds;
-        
         run_single_trial;
+        
         trialCount = trialCount + 1;
+        currBlockTrial = currBlockTrial + 1;
+        
         print_stats();
         WaitSecs(ITI);
-        
     end
     
     Screen('CloseAll');
@@ -729,11 +731,26 @@ function set_shifting(monkeysInitial)
     
     % Prints current trial stats.
     function print_stats()
+        % Calculate percentage correct values and convert them to strings.
+        blockPercentCorrStr  = strcat(num2str(round((numCorrTrials / currBlockTrial) * 100)), '%');
+        totalPercentCorrStr  = strcat(num2str(round((totalNumCorrTrials / trialCount) * 100)), '%');
+        currBlockTrialStr    = num2str(currBlockTrial);
+        trialCountStr        = num2str(trialCount);
+        
         home;
         disp('             ');
         disp('****************************************');
         disp('             ');
-        fprintf('Trials completed:% 4u', trialCount);
+        fprintf('Block trials: % s', currBlockTrialStr);
+        disp('             ');
+        fprintf('Total trials: % s', trialCountStr);
+        disp('             ');
+        disp('             ');
+        disp('----------------------------------------');
+        disp('             ');
+        fprintf('Block correct: % s', blockPercentCorrStr);
+        disp('             ');
+        fprintf('Total correct: % s', totalPercentCorrStr);
         disp('             ');
         disp('             ');
         disp('****************************************');
@@ -782,8 +799,9 @@ function set_shifting(monkeysInitial)
             % Reset correct answer if shift needs to occur.
             if numCorrTrials == numCorrectToShift
                 % Updates.
-                shifts = shifts + 1;
+                currBlockTrial = 0;
                 numCorrTrials = 0;
+                shifts = shifts + 1;
                     
                 % Increment the shift color shift counter.
                 if strcmp(experimentType, 'colorShift')
@@ -829,6 +847,7 @@ function set_shifting(monkeysInitial)
                                 chosenPosition = area;
                                 numCorrTrials = numCorrTrials + 1;
                                 rewarded = 'yes';
+                                totalNumCorrTrials = totalNumCorrTrials + 1;
                                 trialOutcome = 'correct';
                                 
                                 % Save trial data.
