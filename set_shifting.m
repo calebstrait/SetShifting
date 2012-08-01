@@ -32,9 +32,9 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift = 10;             % Num correct trials before shift.
+      numCorrectToShift = 2;             % Num correct trials before shift.
       rewardDuration    = 1.2;            % How long the juicer is open.
-      trackedEye        = 1;              % Tracked eye (left: 1, right: 2).
+      trackedEye        = 2;              % Tracked eye (left: 1, right: 2).
       sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
       experimentType    = 'colorShift';   % Value: 'colorShift'.
     
@@ -771,10 +771,10 @@ function set_shifting(monkeysInitial)
             end
             
             % Reset correct answer if shift needs to occur.
-            if mod(numCorrTrials, numCorrectToShift) == 0 && ...
-               trialCount ~= 0
-                % Update shift counter.
+            if numCorrTrials == numCorrectToShift
+                % Updates.
                 shifts = shifts + 1;
+                numCorrTrials = 0;
                     
                 % Increment the shift color shift counter.
                 if strcmp(experimentType, 'colorShift')
