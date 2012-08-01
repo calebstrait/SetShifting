@@ -56,9 +56,15 @@ function set_shifting(monkeysInitial)
     colorWhite      = [255 255 255];
     
     % Basic coordinates.
-    centerX         = 512;            % X pixel coordinate for the screen center.
-    centerY         = 384;            % Y pixel coordinate for the screen center.
-    hfWidth         = 88;             % Half the width of the fixation boxes.
+    centerX         = 512;  % X pixel coordinate for the screen center.
+    centerY         = 384;  % Y pixel coordinate for the screen center.
+    hfWidth         = 88;   % Half the width of the fixation boxes.
+    fixAdjCenter    = 62;   % Amount to stretch in fix bound from original.
+    fixAdjLRBottom  = 125;  % Amount to stretch down L & R option fix bounnds from original.
+    fixAdjLROutside = 175;  % Amount to stretch out L & R option outside sides from original.
+    fixAdjLRTop     = 40;   % Amount to stretch up L & R option fix bounds from original.
+    fixAdjTTopSide  = 50;   % Amount to stretch up top option fix bounds from original.
+    fixAdjTOutside  = 415;  % Amount to stretch out top option outside sides from original.
     
     % Values to calculate fixation boxes.
     fixBoundXMax    = centerX + hfWidth;
@@ -66,20 +72,20 @@ function set_shifting(monkeysInitial)
     fixBoundYMax    = centerY + hfWidth;
     fixBoundYMin    = centerY - hfWidth;
     
-    leftBoundXMax   = centerX - 152;
-    leftBoundXMin   = centerX - 328;
-    leftBoundYMax   = centerY + 220;
-    leftBoundYMin   = centerY + 44;
+    leftBoundXMax   = centerX - 152 + fixAdjCenter;
+    leftBoundXMin   = centerX - 328 - fixAdjLROutside;
+    leftBoundYMax   = centerY + 220 + fixAdjLRBottom;
+    leftBoundYMin   = centerY + 44 - fixAdjLRTop;
     
-    rightBoundXMax  = centerX + 328;
-    rightBoundXMin  = centerX + 152;
-    rightBoundYMax  = centerY + 220;
-    rightBoundYMin  = centerY + 44;
+    rightBoundXMax  = centerX + 328 + fixAdjLROutside;
+    rightBoundXMin  = centerX + 152 - fixAdjCenter;
+    rightBoundYMax  = centerY + 220 + fixAdjLRBottom;
+    rightBoundYMin  = centerY + 44 - fixAdjLRTop;
     
-    topBoundXMax    = centerX + hfWidth;
-    topBoundXMin    = centerX - hfWidth;
-    topBoundYMax    = centerY - 152;
-    topBoundYMin    = centerY - 328;
+    topBoundXMax    = centerX + hfWidth + fixAdjTOutside;
+    topBoundXMin    = centerX - hfWidth - fixAdjTOutside;
+    topBoundYMax    = centerY - 152 + fixAdjCenter;
+    topBoundYMin    = centerY - 328 - fixAdjTTopSide;
     
     % Other Coordinate variables.
     centerShift         = 240;  % Dist. from fix. dot to center of other fix. squares.
@@ -156,10 +162,13 @@ function set_shifting(monkeysInitial)
         keyPress = key_check;
         key_execute(keyPress);
         
+        %draw_fixation_bounds;
+        
         run_single_trial;
         trialCount = trialCount + 1;
         print_stats();
         WaitSecs(ITI);
+        
     end
     
     Screen('CloseAll');
