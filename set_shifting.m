@@ -32,8 +32,8 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift = 2;             % Num correct trials before shift.
-      rewardDuration    = 1.2;            % How long the juicer is open.
+      numCorrectToShift = 2;              % Num correct trials before shift.
+      rewardDuration    = 0.12;           % How long the juicer is open.
       trackedEye        = 2;              % Tracked eye (left: 1, right: 2).
       sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
       experimentType    = 'colorShift';   % Value: 'colorShift'.
@@ -48,11 +48,11 @@ function set_shifting(monkeysInitial)
     
     % Colors.
     colorBackground = [0 0 0];
-    colorFixDot     = [255 255 0];
-    colorBlue       = [5 61 245];  
-    colorCyan       = [0 253 254];
-    colorGreen      = [0 248 79];
-    colorRed        = [255 30 24];
+    colorYellow     = [255 255 0]; 
+    colorCyan       = [0 255 255];
+    colorGreen      = [0 255 0];
+    colorMagenta    = [255 0 255];
+    colorRed        = [255 0 0];
     colorWhite      = [255 255 255];
     
     % Basic coordinates.
@@ -117,7 +117,7 @@ function set_shifting(monkeysInitial)
     timeToFix          = intmax;  % Amount of time monkey is given to fixate.
     
     % Trial.
-    colors             = [{'blue'}, {'green'}, {'red'}];
+    colors             = [{'cyan'}, {'magenta'}, {'yellow'}];
     corrAnsObject      = struct([]);
     currentAnswer      = '';
     currBlockTrial     = 0;
@@ -344,13 +344,13 @@ function set_shifting(monkeysInitial)
     end
 
     function draw_fixation_bounds()
-        Screen('FrameRect', window, colorFixDot, [fixBoundXMin fixBoundYMin ...
+        Screen('FrameRect', window, colorYellow, [fixBoundXMin fixBoundYMin ...
                                                   fixBoundXMax fixBoundYMax], 1);
-        Screen('FrameRect', window, colorFixDot, [topBoundXMin topBoundYMin ...
+        Screen('FrameRect', window, colorYellow, [topBoundXMin topBoundYMin ...
                                                   topBoundXMax topBoundYMax], 1);
-        Screen('FrameRect', window, colorFixDot, [leftBoundXMin leftBoundYMin ...
+        Screen('FrameRect', window, colorYellow, [leftBoundXMin leftBoundYMin ...
                                                   leftBoundXMax leftBoundYMax], 1);
-        Screen('FrameRect', window, colorFixDot, [rightBoundXMin rightBoundYMin ...
+        Screen('FrameRect', window, colorYellow, [rightBoundXMin rightBoundYMin ...
                                                   rightBoundXMax rightBoundYMax], 1);
         Screen('Flip', window);
     end
@@ -556,7 +556,7 @@ function set_shifting(monkeysInitial)
         end
         
         % Reset these global variables. MAKE THIS BETTER.
-        colors = [{'blue'}, {'green'}, {'red'}];
+        colors = [{'cyan'}, {'magenta'}, {'yellow'}];
         shapes = [{'circle'}, {'star'}, {'triangle'}];
         
         % Sets the current correct response.
@@ -654,7 +654,7 @@ function set_shifting(monkeysInitial)
         end
         
         % Reset these global variables. MAKE THIS BETTER.
-        colors = [{'blue'}, {'green'}, {'red'}];
+        colors = [{'cyan'}, {'magenta'}, {'yellow'}];
         shapes = [{'circle'}, {'star'}, {'triangle'}];
         
         stimuli = temp;
@@ -788,7 +788,7 @@ function set_shifting(monkeysInitial)
         currTrial = currTrial + 1;
         
         % Fixation dot appears.
-        draw_fixation_point(colorFixDot);
+        draw_fixation_point(colorYellow);
         
         % Check for fixation.
         [fixating, ~] = check_fixation('single', minFixTime, timeToFix);
@@ -1058,7 +1058,7 @@ function set_shifting(monkeysInitial)
         top = strsplit(trialObject(currTrial).top, ';');
         
         if inHoldingState
-            Screen('FillOval', window, colorFixDot, [centerX - dotRadius + fixAdj; ...
+            Screen('FillOval', window, colorYellow, [centerX - dotRadius + fixAdj; ...
                                                      centerY - dotRadius; ...
                                                      centerX + dotRadius - fixAdj; ...
                                                      centerY + dotRadius]);
@@ -1070,180 +1070,180 @@ function set_shifting(monkeysInitial)
         end
         
         if strcmp(left(1), 'circle')
-            if strcmp(left(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(left(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(left(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(left(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'left')
                 draw_circle('left', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'left')
-                draw_circle('left', 'outline', colorFill, colorCyan);
+                draw_circle('left', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
-                draw_circle('left', 'outline', colorFill, colorFixDot);
+                draw_circle('left', 'outline', colorFill, colorRed);
             else
                 draw_circle('left', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(right(1), 'circle')
-            if strcmp(right(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(right(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(right(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(right(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'right')
                 draw_circle('right', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'right')
-                draw_circle('right', 'outline', colorFill, colorCyan);
+                draw_circle('right', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
-                draw_circle('right', 'outline', colorFill, colorFixDot);
+                draw_circle('right', 'outline', colorFill, colorRed);
             else
                 draw_circle('right', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(top(1), 'circle')
-            if strcmp(top(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(top(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(top(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(top(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'top')
                 draw_circle('top', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'top')
-                draw_circle('top', 'outline', colorFill, colorCyan);
+                draw_circle('top', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
-                draw_circle('top', 'outline', colorFill, colorFixDot);
+                draw_circle('top', 'outline', colorFill, colorRed);
             else
                 draw_circle('top', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(left(1), 'star')
-            if strcmp(left(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(left(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(left(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(left(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'left')
                 draw_star('left', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'left')
-                draw_star('left', 'outline', colorFill, colorCyan);
+                draw_star('left', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
-                draw_star('left', 'outline', colorFill, colorFixDot);
+                draw_star('left', 'outline', colorFill, colorRed);
             else
                 draw_star('left', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(right(1), 'star')
-            if strcmp(right(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(right(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(right(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(right(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'right')
                 draw_star('right', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'right')
-                draw_star('right', 'outline', colorFill, colorCyan);
+                draw_star('right', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
-                draw_star('right', 'outline', colorFill, colorFixDot);
+                draw_star('right', 'outline', colorFill, colorRed);
             else
                 draw_star('right', 'solid', colorFill, 'none')
             end
         end
         
         if strcmp(top(1), 'star')
-            if strcmp(top(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(top(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(top(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(top(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'top')
                 draw_star('top', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'top')
-                draw_star('top', 'outline', colorFill, colorCyan);
+                draw_star('top', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
-                draw_star('top', 'outline', colorFill, colorFixDot);
+                draw_star('top', 'outline', colorFill, colorRed);
             else
                 draw_star('top', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(left(1), 'triangle')
-            if strcmp(left(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(left(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(left(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(left(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'left')
                 draw_triangle('left', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'left')
-                draw_triangle('left', 'outline', colorFill, colorCyan);
+                draw_triangle('left', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
-                draw_triangle('left', 'outline', colorFill, colorFixDot);
+                draw_triangle('left', 'outline', colorFill, colorRed);
             else
                 draw_triangle('left', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(right(1), 'triangle')
-            if strcmp(right(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(right(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(right(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(right(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'right')
                 draw_triangle('right', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'right')
-                draw_triangle('right', 'outline', colorFill, colorCyan);
+                draw_triangle('right', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
-                draw_triangle('right', 'outline', colorFill, colorFixDot);
+                draw_triangle('right', 'outline', colorFill, colorRed);
             else
                 draw_triangle('right', 'solid', colorFill, 'none');
             end
         end
         
         if strcmp(top(1), 'triangle')
-            if strcmp(top(2), 'blue')
-                colorFill = colorBlue;
-            elseif strcmp(top(2), 'green')
-                colorFill = colorGreen;
+            if strcmp(top(2), 'cyan')
+                colorFill = colorCyan;
+            elseif strcmp(top(2), 'magenta')
+                colorFill = colorMagenta;
             else
-                colorFill = colorRed;
+                colorFill = colorYellow;
             end
             
             if strcmp(status, 'looking') && strcmp(spot, 'top')
                 draw_triangle('top', 'outline', colorFill, colorWhite);
             elseif strcmp(status, 'correct') && strcmp(spot, 'top')
-                draw_triangle('top', 'outline', colorFill, colorCyan);
+                draw_triangle('top', 'outline', colorFill, colorGreen);
             elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
-                draw_triangle('top', 'outline', colorFill, colorFixDot);
+                draw_triangle('top', 'outline', colorFill, colorRed);
             else
                 draw_triangle('top', 'solid', colorFill, 'none');
             end
