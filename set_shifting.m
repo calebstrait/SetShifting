@@ -34,7 +34,7 @@ function set_shifting(monkeysInitial)
     
       numCorrectToShift = 10;             % Num correct trials before shift.
       rewardDuration    = 0.12;           % How long the juicer is open.
-      trackedEye        = 2;              % Tracked eye (left: 1, right: 2).
+      trackedEye        = 1;              % Tracked eye (left: 1, right: 2).
       sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
       experimentType    = 'colorShift';   % Value: 'colorShift'.
     
@@ -117,6 +117,7 @@ function set_shifting(monkeysInitial)
     timeToFix          = intmax;  % Amount of time monkey is given to fixate.
     
     % Trial.
+    blockPercentCorr   = 0;
     colors             = [{'cyan'}, {'magenta'}, {'yellow'}];
     corrAnsObject      = struct([]);
     currentAnswer      = '';
@@ -131,6 +132,7 @@ function set_shifting(monkeysInitial)
     numCorrTrials      = 0;
     shapes             = [{'circle'}, {'star'}, {'triangle'}];
     totalNumCorrTrials = 0;
+    totalPercentCorr   = 0;
     trialCount         = 0;
     trialObject        = struct([]);
     
@@ -869,8 +871,10 @@ function set_shifting(monkeysInitial)
     % Prints current trial stats.
     function print_stats()
         % Calculate percentage correct values and convert them to strings.
-        blockPercentCorrStr  = strcat(num2str(round((numCorrTrials / currBlockTrial) * 100)), '%');
-        totalPercentCorrStr  = strcat(num2str(round((totalNumCorrTrials / trialCount) * 100)), '%');
+        blockPercentCorr     = round((numCorrTrials / currBlockTrial) * 100);
+        totalPercentCorr     = round((totalNumCorrTrials / trialCount) * 100);
+        blockPercentCorrStr  = strcat(num2str(blockPercentCorr), '%');
+        totalPercentCorrStr  = strcat(num2str(totalPercentCorr), '%');
         currBlockTrialStr    = num2str(currBlockTrial);
         trialCountStr        = num2str(trialCount);
         
@@ -1052,8 +1056,9 @@ function set_shifting(monkeysInitial)
         data(currTrial).trial = currTrial;                   % The trial number for this trial.
         data(currTrial).trialOutcome = trialOutcome;         % Whether the choice was correct or not.
         data(currTrial).choiceMade = chosenPosition;         % Location on screen that was chosen.
+        data(currTrial).blockPercentCorr = blockPercentCorr; % Total percent correct for this block.
+        data(currTrial).totalPercentCorr = totalPercentCorr; % Total percent correct for this experiment.
         data(currTrial).trialStimuli = trialObject;          % All stimuli and their positions.
-        data(currTrial).correctChoiceInfo = corrAnsObject;   % Info about the correct choice.
         data(currTrial).rewarded = rewarded;                 % Whether or not a reward was given.
         data(currTrial).rewardDuration = rewardDuration;     % Duration that juicer was open.
         data(currTrial).timeToFixate = timeToFix;            % Max allowed for all fixations.
