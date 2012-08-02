@@ -32,7 +32,7 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift = 10;              % Num correct trials before shift.
+      numCorrectToShift = 10;             % Num correct trials before shift.
       rewardDuration    = 0.12;           % How long the juicer is open.
       trackedEye        = 2;              % Tracked eye (left: 1, right: 2).
       sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
@@ -124,6 +124,7 @@ function set_shifting(monkeysInitial)
     currTrial          = 0;
     currTrialAtError   = 1;
     dimension          = [{'color'}, {'shape'}];
+    lastBlockColor     = '';
     lastCorrPos        = '';
     passedTrial        = true;
     inHoldingState     = true;
@@ -470,37 +471,71 @@ function set_shifting(monkeysInitial)
         if strcmp(experimentType, 'colorShift')
             % Generate new colorShift values.
             if trialCount == 0 || genColorShift
-                % Choose a color randomly from the total color pool w/o replacement.
-                randValIndex1 = rand_int(2);
-                color1 = char(colors(randValIndex1));
-                % Delete the color just picked from the pool.
-                colors(randValIndex1) = [];
-
-                % Choose another color randomly from the total color pool.
-                randValIndex2 = rand_int(1);
-                color2 = char(colors(randValIndex2));
-
-                % Choose random shape if this is the first trial.
+                % Randomly choose correct color if it's the first trial.
                 if trialCount == 0
-                    randValIndex3 = rand_int(2);
-                    shape = char(shapes(randValIndex3));
+                    % Choose a color randomly from the total color pool w/o replacement.
+                    randValIndex1 = rand_int(2);
+                    color1 = char(colors(randValIndex1));
+                    % Delete the color just picked from the pool.
+                    colors(randValIndex1) = [];
+
+                    % Choose another color randomly from the total color pool.
+                    randValIndex2 = rand_int(1);
+                    color2 = char(colors(randValIndex2));
+
+                    % Choose random shape if this is the first trial.
+                    if trialCount == 0
+                        randValIndex3 = rand_int(2);
+                        shape = char(shapes(randValIndex3));
+                    else
+                        shape = chosenShape;
+                    end
+
+                    % Set chosen shape and colors.
+                    chosenShape = shape;
+                    colorOne = color1;
+                    colorTwo = color2;
+
+                    % Set the correct answer type.
+                    temp(currTrial).type = 'colorShift';
+                    temp(currTrial).dimension = 'color';
+                    temp(currTrial).value = colorOne;
+                    temp(currTrial).shape = chosenShape;
+
+                    % Reset trigger that decides if a full color shift occurs.
+                    genColorShift = 0;
+                    lastBlockColor = color1;
+                % Otherwise make sure correct color isn't last's block's correct color.
                 else
-                    shape = chosenShape;
+                    if strcmp(lastBlockColor, 'cyan')
+                        tempColorArray = [{'magenta'}, {'yellow'}];
+                    elseif strcmp(lastBlockColor, 'magenta')
+                        tempColorArray = [{'cyan'}, {'yellow'}];
+                    else
+                        tempColorArray = [{'cyan'}, {'magenta'}];
+                    end
+                    
+                    % Choose a color randomly from the small color pool.
+                    randIndex = rand_int(1);
+                    color1 = char(tempColorArray(randIndex));
+                    tempColorArray(randIndex) = [];
+                    
+                    % Select the remaining color.
+                    color2 = char(tempColorArray(1));
+                    
+                    % Set chosen colors (shape has already been set).
+                    colorOne = color1;
+                    colorTwo = color2;
+
+                    % Set the correct answer type.
+                    temp(currTrial).type = 'colorShift';
+                    temp(currTrial).dimension = 'color';
+                    temp(currTrial).value = colorOne;
+                    temp(currTrial).shape = chosenShape;
+
+                    % Reset trigger that decides if a full color shift occurs.
+                    genColorShift = 0;
                 end
-
-                % Set chosen shape and colors.
-                chosenShape = shape;
-                colorOne = color1;
-                colorTwo = color2;
-
-                % Set the correct answer type.
-                temp(currTrial).type = 'colorShift';
-                temp(currTrial).dimension = 'color';
-                temp(currTrial).value = color1;
-                temp(currTrial).shape = shape;
-                
-                % Reset trigger that decides if a full color shift occurs.
-                genColorShift = 0;
             else
                 tempColor = colorOne;
                 colorOne = colorTwo;
@@ -511,6 +546,8 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).dimension = 'color';
                 temp(currTrial).value = colorOne;
                 temp(currTrial).shape = chosenShape;
+                
+                lastBlockColor = colorOne;
             end
         elseif strcmp(experimentType, 'shapeShift')
             disp('Shape shift answer generated here.');
@@ -914,7 +951,6 @@ function set_shifting(monkeysInitial)
                 end
                 
                 corrAnsObject = generate_correct_answer;
-                disp(strcat('SHIFT', num2str(shifts)));
             end
             
             % Check experiment type.
@@ -927,7 +963,6 @@ function set_shifting(monkeysInitial)
                 % Only make new stimuli if the trial is passed.
                 if passedTrial
                     trialObject = generate_trial_stimuli;
-                    disp(strcat('NEW STIMULI', num2str(currTrial)));
                 end
 
                 if strcmp(sessionType, 'behavior')
