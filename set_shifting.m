@@ -32,11 +32,15 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift = 10;             % Num correct trials before shift.
-      rewardDuration    = 0.12;           % How long the juicer is open.
-      trackedEye        = 2;              % Tracked eye (left: 1, right: 2).
-      sessionType       = 'behavior';     % Values: 'behavior' or 'recording'.
-      experimentType    = 'shapeShift';   % Value: 'colorShift' or 'shapeShift'.
+      numCorrectToShift   = 2;             % Number correct trials before shift.
+      rewardDuration      = 0.12;          % How long the juicer is open.
+      trackedEye          = 2;             % Tracked eye (left: 1, right: 2).
+      sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
+      experimentType      = 'shapeShift';  % Value: 'colorShift' or 'shapeShift'.
+      
+      % Warning: Only change these vars when using 'colorShift' or 'shapeShift'.
+      colorShiftNumColors = 3;             % Number of colors to use.
+      shapeShiftNumShapes = 3;             % Number of shapes to use.
     
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
@@ -145,6 +149,7 @@ function set_shifting(monkeysInitial)
     chosenShape        = '';
     colorOne           = '';
     colorTwo           = '';
+    colorThree         = '';
     genColorShift      = 0;
     lastBlockColor     = '';
     colorSetUnits      = 0;  % Number of times a set shift unit has occurred.
@@ -154,8 +159,9 @@ function set_shifting(monkeysInitial)
     genShapeShift      = 0;
     lastBlockShape     = '';
     shapeOne           = '';
-    shapeSetUnits      = 0;
     shapeTwo           = '';
+    shapeThree         = '';
+    shapeSetUnits      = 0;
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -489,9 +495,13 @@ function set_shifting(monkeysInitial)
                     % Delete the color just picked from the pool.
                     colors(randValIndex1) = [];
 
-                    % Choose another color randomly from the total color pool.
+                    % Choose another color randomly from the pool w/o replacement.
                     randValIndex2 = rand_int(1);
                     color2 = char(colors(randValIndex2));
+                    colors(randValIndex2) = [];
+                    
+                    % Choose the final color from the pool.
+                    color3 = char(colors(1));
 
                     % Choose random shape if this is the first trial.
                     if trialCount == 0
@@ -505,6 +515,7 @@ function set_shifting(monkeysInitial)
                     chosenShape = shape;
                     colorOne = color1;
                     colorTwo = color2;
+                    colorThree = color3;
 
                     % Set the correct answer type.
                     temp(currTrial).type = 'colorShift';
@@ -530,12 +541,14 @@ function set_shifting(monkeysInitial)
                     color1 = char(tempColorArray(randIndex));
                     tempColorArray(randIndex) = [];
                     
-                    % Select the remaining color.
+                    % Set the remaining colors.
                     color2 = char(tempColorArray(1));
+                    color3 = lastBlockColor;
                     
                     % Set chosen colors (shape has already been set).
                     colorOne = color1;
                     colorTwo = color2;
+                    colorThree = color3;
 
                     % Set the correct answer type.
                     temp(currTrial).type = 'colorShift';
@@ -545,6 +558,7 @@ function set_shifting(monkeysInitial)
 
                     % Reset trigger that decides if a full color shift occurs.
                     genColorShift = 0;
+                    lastBlockColor = colorOne;
                 end
             else
                 tempColor = colorOne;
@@ -570,9 +584,13 @@ function set_shifting(monkeysInitial)
                     % Delete the shape just picked from the pool.
                     shapes(randValIndex1) = [];
 
-                    % Choose another shape randomly from the total shape pool.
+                    % Choose another color randomly from the pool w/o replacement.
                     randValIndex2 = rand_int(1);
                     shape2 = char(shapes(randValIndex2));
+                    shapes(randValIndex2) = [];
+                    
+                    % Choose the final color from the pool.
+                    shape3 = char(shapes(1));
 
                     % Choose random color if this is the first trial.
                     if trialCount == 0
@@ -586,6 +604,7 @@ function set_shifting(monkeysInitial)
                     chosenColor = color;
                     shapeOne = shape1;
                     shapeTwo = shape2;
+                    shapeThree = shape3;
 
                     % Set the correct answer type.
                     temp(currTrial).type = 'shapeShift';
@@ -614,9 +633,12 @@ function set_shifting(monkeysInitial)
                     % Select the remaining color.
                     shape2 = char(tempShapeArray(1));
                     
+                    shape3 = lastBlockShape;
+                    
                     % Set chosen colors (shape has already been set).
                     shapeOne = shape1;
                     shapeTwo = shape2;
+                    shapeThree = shape3;
 
                     % Set the correct answer type.
                     temp(currTrial).type = 'shapeShift';
@@ -626,6 +648,7 @@ function set_shifting(monkeysInitial)
 
                     % Reset trigger that decides if a full shape shift occurs.
                     genShapeShift = 0;
+                    lastBlockShape = shapeOne;
                 end
             else
                 tempShape = shapeOne;
@@ -748,7 +771,13 @@ function set_shifting(monkeysInitial)
         elseif strcmp(experimentType, 'colorShift')
             % Just generate a random location for the correct choice.
             if currTrial == 1
-                tempColors = [{colorOne}, {colorTwo}, {colorTwo}];
+                if colorShiftNumColors == 2
+                    tempColors = [{colorOne}, {colorTwo}, {colorTwo}];
+                elseif colorShiftNumColors == 3
+                    tempColors = [{colorOne}, {colorTwo}, {colorThree}];
+                else
+                    disp('The colorShiftNumColors variable has an illegal value.');
+                end
                 
                 % Find left stimulus value.
                 randIndex1 = rand_int(2);
@@ -786,7 +815,14 @@ function set_shifting(monkeysInitial)
                 lastCorrPos = correctSpot;
             % Make sure the correct choice is not in the same location.
             else
-                tempColors = [{colorTwo}, {colorTwo}];
+                if colorShiftNumColors == 2
+                    tempColors = [{colorTwo}, {colorTwo}];
+                elseif colorShiftNumColors == 3
+                    tempColors = [{colorTwo}, {colorThree}];
+                else
+                    disp('The colorShiftNumColors variable has an illegal value.');
+                end
+                
                 leftSubVal = '';
                 rightSubVal = '';
                 topSubVal = '';
@@ -877,7 +913,13 @@ function set_shifting(monkeysInitial)
         elseif strcmp(experimentType, 'shapeShift')
             % Just generate a random location for the correct choice.
             if currTrial == 1
-                tempShapes = [{shapeOne}, {shapeTwo}, {shapeTwo}];
+                if shapeShiftNumShapes == 2
+                    tempShapes = [{shapeOne}, {shapeTwo}, {shapeTwo}];
+                elseif shapeShiftNumShapes == 3
+                    tempShapes = [{shapeOne}, {shapeTwo}, {shapeThree}];
+                else
+                    disp('The colorShiftNumColors variable has an illegal value.');
+                end
                 
                 % Find left stimulus value.
                 randIndex1 = rand_int(2);
@@ -915,7 +957,14 @@ function set_shifting(monkeysInitial)
                 lastCorrPos = correctSpot;
             % Make sure the correct choice is not in the same location.
             else
-                tempShapes = [{shapeTwo}, {shapeTwo}];
+                if shapeShiftNumShapes == 2
+                    tempShapes = [{shapeTwo}, {shapeTwo}];
+                elseif shapeShiftNumShapes == 3
+                    tempShapes = [{shapeTwo}, {shapeThree}];
+                else
+                    disp('The shapeShiftNumShapes variable has an illegal value.');
+                end
+                
                 leftSubVal = '';
                 rightSubVal = '';
                 topSubVal = '';
@@ -1168,12 +1217,14 @@ function set_shifting(monkeysInitial)
                 end
                 
                 % Schedule full color shift update at the 2nd shift.
-                if mod(colorSetUnits, 2) == 0
+                if (mod(colorSetUnits, 2) == 0 || colorShiftNumColors == 3) && ...
+                    strcmp(experimentType, 'colorShift')
                     genColorShift = 1;
                 end
                 
                 % Schedule full color shift update at the 2nd shift.
-                if mod(shapeSetUnits, 2) == 0
+                if (mod(shapeSetUnits, 2) == 0 || shapeShiftNumShapes == 3) && ...
+                    strcmp(experimentType, 'shapeShift')
                     genShapeShift = 1;
                 end
                 
