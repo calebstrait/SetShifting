@@ -772,7 +772,7 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).right = rightVal;
                 temp(currTrial).top = topVal;
                 
-                % Determin where the correct choice is located.
+                % Determine where the correct choice is located.
                 if strcmp(leftValSub, correctVal)
                     correctSpot = 'left';
                 elseif strcmp(rightValSub, correctVal)
@@ -901,7 +901,7 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).right = rightVal;
                 temp(currTrial).top = topVal;
                 
-                % Determin where the correct choice is located.
+                % Determine where the correct choice is located.
                 if strcmp(leftValSub, correctVal)
                     correctSpot = 'left';
                 elseif strcmp(rightValSub, correctVal)
