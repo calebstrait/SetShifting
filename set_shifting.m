@@ -32,15 +32,15 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 2;             % Number correct trials before shift.
+      numCorrectToShift   = 10;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      trackedEye          = 2;             % Tracked eye (left: 1, right: 2).
+      trackedEye          = 1;             % Tracked eye (left: 1, right: 2).
       sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
       experimentType      = 'shapeShift';  % Value: 'colorShift' or 'shapeShift'.
       
       % Warning: Only change these vars when using 'colorShift' or 'shapeShift'.
-      colorShiftNumColors = 3;             % Number of colors to use.
-      shapeShiftNumShapes = 3;             % Number of shapes to use.
+      colorShiftNumColors = 3;             % Number of colors to use. Values: 2 or 3.
+      shapeShiftNumShapes = 3;             % Number of shapes to use. Values: 2 or 3.
     
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
