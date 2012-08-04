@@ -32,11 +32,11 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 10;            % Number correct trials before shift.
+      numCorrectToShift   = 3;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      trackedEye          = 1;             % Tracked eye (left: 1, right: 2).
+      trackedEye          = 2;             % Tracked eye (left: 1, right: 2).
       sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
-      experimentType      = 'shapeShift';  % Value: 'colorShift' or 'shapeShift'.
+      experimentType      = 'intraSS';     % Value: 'colorShift' or 'shapeShift'.
       
       % Warning: Only change these vars when using 'colorShift' or 'shapeShift'.
       colorShiftNumColors = 3;             % Number of colors to use. Values: 2 or 3.
@@ -145,11 +145,18 @@ function set_shifting(monkeysInitial)
     shifts             = 0;
     trialOutcome       = '';
     
-    % Color shift trial info.
-    chosenShape        = '';
+    % Shared trial info.
     colorOne           = '';
     colorTwo           = '';
     colorThree         = '';
+    shapeOne           = '';
+    shapeTwo           = '';
+    shapeThree         = '';
+    sessionDimension   = '';
+    lastBlockValue     = '';
+    
+    % Color shift trial info.
+    chosenShape        = '';
     genColorShift      = 0;
     lastBlockColor     = '';
     colorSetUnits      = 0;  % Number of times a set shift unit has occurred.
@@ -158,10 +165,11 @@ function set_shifting(monkeysInitial)
     chosenColor        = '';
     genShapeShift      = 0;
     lastBlockShape     = '';
-    shapeOne           = '';
-    shapeTwo           = '';
-    shapeThree         = '';
     shapeSetUnits      = 0;
+    
+    % IntraSS trial info.
+    intraSSUnits       = 0;
+    genIntraSSShift    = 0;
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -187,7 +195,7 @@ function set_shifting(monkeysInitial)
         key_execute(keyPress);
         
         run_single_trial;
-        
+        return;
         trialCount = trialCount + 1;
         currBlockTrial = currBlockTrial + 1;
         inHoldingState = true;
@@ -589,7 +597,7 @@ function set_shifting(monkeysInitial)
                     shape2 = char(shapes(randValIndex2));
                     shapes(randValIndex2) = [];
                     
-                    % Choose the final color from the pool.
+                    % Choose the final shape from the pool.
                     shape3 = char(shapes(1));
 
                     % Choose random color if this is the first trial.
@@ -664,14 +672,211 @@ function set_shifting(monkeysInitial)
                 lastBlockShape = shapeOne;
             end
         elseif strcmp(experimentType, 'intraSS')
-            % Choose a color randomly.
-            randValIndex = rand_int(2);
-            value = char(colors(randValIndex));
-            
-            % Set the correct answer type.
-            temp(currTrial).type  = 'intraSS';
-            temp(currTrial).dimension = 'color';
-            temp(currTrial).value = value;
+            % Randomly choose correct color if it's the first trial.
+            if trialCount == 0
+                % Choose a color randomly from the total color pool w/o replacement.
+                randValIndex1 = rand_int(2);
+                color1 = char(colors(randValIndex1));
+                % Delete the color just picked from the pool.
+                colors(randValIndex1) = [];
+
+                % Choose another color randomly from the pool w/o replacement.
+                randValIndex2 = rand_int(1);
+                color2 = char(colors(randValIndex2));
+                colors(randValIndex2) = [];
+
+                % Choose the final color from the pool.
+                color3 = char(colors(1));
+
+                % Choose a shape randomly from the total shape pool w/o replacement.
+                randValIndex1 = rand_int(2);
+                shape1 = char(shapes(randValIndex1));
+                % Delete the shape just picked from the pool.
+                shapes(randValIndex1) = [];
+
+                % Choose another color randomly from the pool w/o replacement.
+                randValIndex2 = rand_int(1);
+                shape2 = char(shapes(randValIndex2));
+                shapes(randValIndex2) = [];
+
+                % Choose the final shape from the pool.
+                shape3 = char(shapes(1));
+
+                % Set chosen shape and colors.
+                shapeOne = shape1;
+                shapeTwo = shape2;
+                shapeThree = shape3;
+                colorOne = color1;
+                colorTwo = color2;
+                colorThree = color3;
+
+                % Randomly choose a dimension to use for this entire session.
+                tempArray = [{'color'}, {'shape'}];
+                randIndex = rand_int(1);
+                sessionDimension = char(tempArray(randIndex));
+
+                % Set the correct answer type.
+                if strcmp(sessionDimension, 'color')
+                    trialValue = colorOne;
+                else
+                    trialValue = shapeOne;
+                end
+
+                temp(currTrial).type = 'intraSS';
+                temp(currTrial).dimension = sessionDimension;
+                temp(currTrial).value = trialValue;
+
+                % Reset trigger that decides if a full shift occurs.
+                genIntraSSShift = 0;
+                lastBlockValue = trialValue;
+            elseif genIntraSSShift
+                if strcmp(colorOne, 'cyan')
+                    tempColorArray = [{'magenta'}, {'yellow'}];
+                    lastColor = 'cyan';
+                elseif strcmp(colorOne, 'magenta')
+                    tempColorArray = [{'cyan'}, {'yellow'}];
+                    lastColor = 'magenta';
+                else
+                    tempColorArray = [{'cyan'}, {'magenta'}];
+                    lastColor = 'yellow';
+                end
+
+                if strcmp(shapeOne, 'circle')
+                    tempShapeArray = [{'star'}, {'triangle'}];
+                    lastShape = 'circle';
+                elseif strcmp(shapeOne, 'star')
+                    tempShapeArray = [{'circle'}, {'triangle'}];
+                    lastShape = 'star';
+                else
+                    tempShapeArray = [{'circle'}, {'star'}];
+                    lastShape = 'triangle';
+                end
+
+                % Choose a color randomly from the small color pool.
+                randIndex = rand_int(1);
+                color1 = char(tempColorArray(randIndex));
+                tempColorArray(randIndex) = [];
+
+                % Set the remaining colors.
+                color2 = char(tempColorArray(1));
+                color3 = lastColor;
+
+                % Choose a shape randomly from the small shape pool.
+                randIndex = rand_int(1);
+                shape1 = char(tempShapeArray(randIndex));
+                tempShapeArray(randIndex) = [];
+
+                % Select the remaining color.
+                shape2 = char(tempShapeArray(1));
+                shape3 = lastShape;
+
+                % Set shapes and colors.
+                shapeOne = shape1;
+                shapeTwo = shape2;
+                shapeThree = shape3;
+                colorOne = color1;
+                colorTwo = color2;
+                colorThree = color3;
+                
+                % Set the correct answer type.
+                if strcmp(sessionDimension, 'color')
+                    trialValue = colorOne;
+                else
+                    trialValue = shapeOne;
+                end
+                
+                % Set the correct answer type.
+                temp(currTrial).type = 'intraSS';
+                temp(currTrial).dimension = sessionDimension;
+                temp(currTrial).value = trialValue;
+
+                % Reset trigger that decides if a full color shift occurs.
+                genIntraSSShift = 0;
+                lastBlockValue = trialValue;
+            else
+                if strcmp(colorOne, 'cyan')
+                    tempColorArray = [{'magenta'}, {'yellow'}];
+                    lastColor = 'cyan';
+                elseif strcmp(colorOne, 'magenta')
+                    tempColorArray = [{'cyan'}, {'yellow'}];
+                    lastColor = 'magenta';
+                else
+                    tempColorArray = [{'cyan'}, {'magenta'}];
+                    lastColor = 'yellow';
+                end
+
+                if strcmp(shapeOne, 'circle')
+                    tempShapeArray = [{'star'}, {'triangle'}];
+                    lastShape = 'circle';
+                elseif strcmp(shapeOne, 'star')
+                    tempShapeArray = [{'circle'}, {'triangle'}];
+                    lastShape = 'star';
+                else
+                    tempShapeArray = [{'circle'}, {'star'}];
+                    lastShape = 'triangle';
+                end
+                
+                % Keep correct color the same; reset all other values.
+                if strcmp(sessionDimension, 'color')
+                    % Choose a color randomly from the small color pool.
+                    randIndex = rand_int(1);
+                    color2 = char(tempColorArray(randIndex));
+                    tempColorArray(randIndex) = [];
+
+                    % Set the remaining color.
+                    color3 = char(tempColorArray(1));
+
+                    % Choose a shape randomly from the small shape pool.
+                    randIndex = rand_int(1);
+                    shape1 = char(tempShapeArray(randIndex));
+                    tempShapeArray(randIndex) = [];
+
+                    % Select the remaining shapes.
+                    shape2 = char(tempShapeArray(1));
+                    shape3 = lastShape;
+                % Keep correct shape the same; reset all other values.
+                else
+                    % Choose a shape randomly from the small color pool.
+                    randIndex = rand_int(1);
+                    shape2 = char(tempShapeArray(randIndex));
+                    tempShapeArray(randIndex) = [];
+
+                    % Set the remaining shape.
+                    shape3 = char(tempShapeArray(1));
+
+                    % Choose a color randomly from the small shape pool.
+                    randIndex = rand_int(1);
+                    color1 = char(tempColorArray(randIndex));
+                    tempColorArray(randIndex) = [];
+
+                    % Select the remaining colors.
+                    color2 = char(tempColorArray(1));
+                    color3 = lastColor;
+                end
+                
+
+                % Set shapes and colors.
+                shapeOne = shape1;
+                shapeTwo = shape2;
+                shapeThree = shape3;
+                colorOne = color1;
+                colorTwo = color2;
+                colorThree = color3;
+                
+                % Set the correct answer type.
+                if strcmp(sessionDimension, 'color')
+                    trialValue = colorOne;
+                else
+                    trialValue = shapeOne;
+                end
+                
+                % Set the correct answer type.
+                temp(currTrial).type = 'intraSS';
+                temp(currTrial).dimension = sessionDimension;
+                temp(currTrial).value = trialValue;
+                
+                lastBlockValue = trialValue;
+            end
         elseif strcmp(experimentType, 'extraSS')
             % Choose a dimension.
             randIndex = rand_int(1);
@@ -725,49 +930,137 @@ function set_shifting(monkeysInitial)
         
         if strcmp(experimentType, 'reversal')
             % THIS CONDITION NOT CURRENTLY SUPPORTED.
+        % STILL NEED TO MAKE INTRA/EXTRA SS STIMULI CREATION WORK.
         elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
-            % Find left stimulus value.
-            randIndex1 = rand_int(2);
-            leftValSub1 = char(shapes(randIndex1));
-            shapes(randIndex1) = [];
-            randIndex2 = rand_int(2);
-            leftValSub2 = char(colors(randIndex2));
-            colors(randIndex2) = [];
-            leftVal = strcat(leftValSub1, ';', leftValSub2);
-            
-            if strcmp(leftValSub1, correctVal) || strcmp(leftValSub2, correctVal)
-                correctSpot = 'left';
+            % Just generate a random location for the correct choice.
+            if currTrial == 1
+                tempColors = [{colorOne}, {colorTwo}, {colorThree}];
+                
+                % Find left stimulus value.
+                randIndex1 = rand_int(2);
+                leftValSub = char(tempColors(randIndex1));
+                tempColors(randIndex1) = [];
+
+                % Find right stimulus value.
+                randIndex2 = rand_int(1);
+                rightValSub = char(tempColors(randIndex2));
+                tempColors(randIndex2) = [];
+
+                % Find top stimulus value.
+                topValSub = char(tempColors(1));
+
+                leftVal = strcat(chosenShape, ';', leftValSub);
+                rightVal = strcat(chosenShape, ';', rightValSub);
+                topVal = strcat(chosenShape, ';', topValSub);
+
+                % Set the trial values: '<shape>;<color>'.
+                temp(currTrial).left  = leftVal;
+                temp(currTrial).right = rightVal;
+                temp(currTrial).top = topVal;
+                
+                % Determine where the correct choice is located.
+                if strcmp(leftValSub, correctVal)
+                    correctSpot = 'left';
+                elseif strcmp(rightValSub, correctVal)
+                    correctSpot = 'right';
+                elseif strcmp(topValSub, correctVal)
+                    correctSpot = 'top';
+                end
+                
+                % Note the location of the correct choice.
+                corrAnsObject(currTrial).correct = correctSpot;
+                lastCorrPos = correctSpot;
+            % Make sure the correct choice is not in the same location.
+            else
+                tempColors = [{colorTwo}, {colorThree}];
+                
+                leftSubVal = '';
+                rightSubVal = '';
+                topSubVal = '';
+                correctSpot = '';
+                
+                % Choose new correct position from 2 that it wasn't last time.
+                if strcmp(lastCorrPos, 'left')
+                    tempArray = [{'right'}, {'top'}];
+                    randIndex1 = rand_int(1);
+                    newCorrPosition = char(tempArray(randIndex1));
+                    
+                    if strcmp(newCorrPosition, 'right')
+                        rightSubVal = colorOne;
+                        randIndex2 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex2));
+                        tempColors(randIndex2) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'right';
+                    else
+                        topSubVal = colorOne;
+                        randIndex3 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex3));
+                        tempColors(randIndex3) = [];
+                        rightSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'top';
+                    end
+                elseif strcmp(lastCorrPos, 'right')
+                    tempArray = [{'left'}, {'top'}];
+                    randIndex1 = rand_int(1);
+                    newCorrPosition = char(tempArray(randIndex1));
+                    
+                    if strcmp(newCorrPosition, 'left')
+                        leftSubVal = colorOne;
+                        randIndex2 = rand_int(1);
+                        rightSubVal = char(tempColors(randIndex2));
+                        tempColors(randIndex2) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'left';
+                    else
+                        topSubVal = colorOne;
+                        randIndex3 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex3));
+                        tempColors(randIndex3) = [];
+                        rightSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'top';
+                    end
+                elseif strcmp(lastCorrPos, 'top')
+                    tempArray = [{'left'}, {'right'}];
+                    randIndex1 = rand_int(1);
+                    newCorrPosition = char(tempArray(randIndex1));
+                    
+                    if strcmp(newCorrPosition, 'left')
+                        leftSubVal = colorOne;
+                        randIndex2 = rand_int(1);
+                        rightSubVal = char(tempColors(randIndex2));
+                        tempColors(randIndex2) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'left';
+                    else
+                        rightSubVal = colorOne;
+                        randIndex3 = rand_int(1);
+                        leftSubVal = char(tempColors(randIndex3));
+                        tempColors(randIndex3) = [];
+                        topSubVal = char(tempColors(1));
+                        
+                        correctSpot = 'right';
+                    end
+                end
+                
+                leftVal = strcat(chosenShape, ';', leftSubVal);
+                rightVal = strcat(chosenShape, ';', rightSubVal);
+                topVal = strcat(chosenShape, ';', topSubVal);
+
+                % Set the trial values: '<shape>;<color>'.
+                temp(currTrial).left  = leftVal;
+                temp(currTrial).right = rightVal;
+                temp(currTrial).top = topVal;
+
+                % Note the location of the correct choice.
+                corrAnsObject(currTrial).correct = correctSpot;
+                lastCorrPos = correctSpot;
             end
-            
-            % Find right stimulus value.
-            randIndex1 = rand_int(1);
-            rightValSub1 = char(shapes(randIndex1));
-            shapes(randIndex1) = [];
-            randIndex2 = rand_int(1);
-            rightValSub2 = char(colors(randIndex2));
-            colors(randIndex2) = [];
-            rightVal = strcat(rightValSub1, ';', rightValSub2);
-            
-            if strcmp(rightValSub1, correctVal) || strcmp(rightValSub2, correctVal)
-                correctSpot = 'right';
-            end
-            
-            % Find top stimulus value.
-            topValSub1 = char(shapes(1));
-            topValSub2 = char(colors(1));
-            topVal = strcat(topValSub1, ';', topValSub2);
-            
-            if strcmp(topValSub1, correctVal) || strcmp(topValSub2, correctVal)
-                correctSpot = 'top';
-            end
-            
-            % Set the trial values: '<shape>;<color>'.
-            temp(currTrial).left  = leftVal;
-            temp(currTrial).right = rightVal;
-            temp(currTrial).top = topVal;
-            
-            % Note the location of the correct choice.
-            corrAnsObject(currTrial).correct = correctSpot;
         elseif strcmp(experimentType, 'colorShift')
             % Just generate a random location for the correct choice.
             if currTrial == 1
@@ -1200,6 +1493,14 @@ function set_shifting(monkeysInitial)
             % Make sure correct answer is set at start of the session.
             if trialCount == 0
                 corrAnsObject = generate_correct_answer;
+                disp(corrAnsObject);
+                disp(strcat('color1: ', colorOne));
+                disp(strcat('color2: ', colorTwo));
+                disp(strcat('color3: ', colorThree));
+                disp(strcat('shape1: ', shapeOne));
+                disp(strcat('shape2: ', shapeTwo));
+                disp(strcat('shape3: ', shapeThree));
+                return;
             end
             
             % Reset correct answer if shift needs to occur.
@@ -1214,6 +1515,8 @@ function set_shifting(monkeysInitial)
                     colorSetUnits = colorSetUnits + 1;
                 elseif strcmp(experimentType, 'shapeShift')
                     shapeSetUnits = shapeSetUnits + 1;
+                elseif strcmp(experimentType, 'intraSS')
+                    intraSSUnits = intraSSUnits + 1;
                 end
                 
                 % Schedule full color shift update at the 2nd shift.
@@ -1228,6 +1531,14 @@ function set_shifting(monkeysInitial)
                     genShapeShift = 1;
                 end
                 
+                % Schedule a full intradimensional shift.
+                if mod(intraSSUnits, 2) == 0 && strcmp(experimentType, 'intraSS')
+                    genIntraSSShift = 1;
+                end
+            end
+            
+            % Genererate correct trial answer for intraSS task.
+            if strcmp(experimentType, 'intraSS') && mod(intraSSUnits, 2) ~= 0
                 corrAnsObject = generate_correct_answer;
             end
             
