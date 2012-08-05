@@ -32,11 +32,12 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 2;             % Number correct trials before shift.
+      numCorrectToShift   = 10;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      trackedEye          = 2;             % Tracked eye (left: 1, right: 2).
+      trackedEye          = 1;             % Tracked eye (left: 1, right: 2).
       sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
-      experimentType      = 'intraSS';     % Value: 'colorShift' or 'shapeShift'.
+      experimentType      = 'intraShift';  % Values: 'colorShift', 'shapeShift',
+                                           %         'intraSS', or 'extraSS'. 
       
       % Warning: Only change these vars when using 'colorShift' or 'shapeShift'.
       colorShiftNumColors = 3;             % Number of colors to use. Values: 2 or 3.
@@ -169,7 +170,7 @@ function set_shifting(monkeysInitial)
     shapeSetUnits      = 0;
     
     % IntraSS trial info.
-    genIntraSSShift    = 0;
+    genDimSetShift    = 0;
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -671,10 +672,9 @@ function set_shifting(monkeysInitial)
                 
                 lastBlockShape = shapeOne;
             end
-        elseif strcmp(experimentType, 'intraSS')
+        elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
             % Randomly choose correct stimulus if it's the first trial.
             if trialCount == 0
-                disp('SHIFT_first');
                 % Choose a color randomly from the total color pool w/o replacement.
                 randValIndex1 = rand_int(2);
                 color1 = char(colors(randValIndex1));
@@ -723,15 +723,13 @@ function set_shifting(monkeysInitial)
                     trialValue = shapeOne;
                 end
                 
-                temp(currTrial).type = 'intraSS';
+                temp(currTrial).type = experimentType;
                 temp(currTrial).dimension = sessionDimension;
                 temp(currTrial).value = trialValue;
 
                 % Reset trigger that decides if a full shift occurs.
-                genIntraSSShift = 0;
                 lastBlockValue = trialValue;
-            elseif genIntraSSShift
-                disp('SHIFT_major');
+            elseif genDimSetShift
                 if strcmp(colorOne, 'cyan')
                     tempColorArray = [{'magenta'}, {'yellow'}];
                     lastColor = 'cyan';
@@ -780,23 +778,34 @@ function set_shifting(monkeysInitial)
                 colorTwo = color2;
                 colorThree = color3;
                 
-                % Set the correct answer type.
-                if strcmp(sessionDimension, 'color')
-                    trialValue = colorOne;
+                % Set the correct answer types depending on the experiment type.
+                if strcmp(experimentType, 'intraSS')
+                    if strcmp(sessionDimension, 'color')
+                        sessionDimension = 'color';
+                        trialValue = colorOne;
+                    else
+                        sessionDimension = 'shape';
+                        trialValue = shapeOne;
+                    end
                 else
-                    trialValue = shapeOne;
+                    if strcmp(sessionDimension, 'color')
+                        sessionDimension = 'shape';
+                        trialValue = shapeOne;
+                    else
+                        sessionDimension = 'color';
+                        trialValue = colorOne;
+                    end
                 end
                 
                 % Set the correct answer type.
-                temp(currTrial).type = 'intraSS';
+                temp(currTrial).type = experimentType;
                 temp(currTrial).dimension = sessionDimension;
                 temp(currTrial).value = trialValue;
 
                 % Reset trigger that decides if a full color shift occurs.
-                genIntraSSShift = 0;
+                genDimSetShift = 0;
                 lastBlockValue = trialValue;
             else
-                disp('SHIFT_every');
                 if strcmp(colorOne, 'cyan')
                     tempColorArray = [{'magenta'}, {'yellow'}];
                     lastColor = 'cyan';
@@ -875,7 +884,7 @@ function set_shifting(monkeysInitial)
                 end
                 
                 % Set the correct answer type.
-                temp(currTrial).type = 'intraSS';
+                temp(currTrial).type = experimentType;
                 temp(currTrial).dimension = sessionDimension;
                 temp(currTrial).value = trialValue;
                 
@@ -1471,26 +1480,12 @@ function set_shifting(monkeysInitial)
             % Make sure correct answer is set at start of the session.
             if trialCount == 0
                 corrAnsObject = generate_correct_answer;
-                disp(corrAnsObject);
-                disp(strcat('color1: ', colorOne));
-                disp(strcat('color2: ', colorTwo));
-                disp(strcat('color3: ', colorThree));
-                disp(strcat('shape1: ', shapeOne));
-                disp(strcat('shape2: ', shapeTwo));
-                disp(strcat('shape3: ', shapeThree));
             end
             
             % Genererate correct trial answer for intraSS task.
-            if strcmp(experimentType, 'intraSS') && trialCount ~= 0 && ...
-               numCorrTrials ~= numCorrectToShift && passedTrial
+            if (strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')) && ...
+                trialCount ~= 0 && numCorrTrials ~= numCorrectToShift && passedTrial
                 corrAnsObject = generate_correct_answer;
-                disp(corrAnsObject);
-                disp(strcat('color1: ', colorOne));
-                disp(strcat('color2: ', colorTwo));
-                disp(strcat('color3: ', colorThree));
-                disp(strcat('shape1: ', shapeOne));
-                disp(strcat('shape2: ', shapeTwo));
-                disp(strcat('shape3: ', shapeThree));
             end
             
             % Reset correct answer if shift needs to occur.
@@ -1520,18 +1515,11 @@ function set_shifting(monkeysInitial)
                 end
                 
                 % Schedule a full intradimensional shift.
-                if strcmp(experimentType, 'intraSS')
-                    genIntraSSShift = 1;
+                if strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
+                    genDimSetShift = 1;
                 end
                 
                 corrAnsObject = generate_correct_answer;
-                disp(corrAnsObject);
-                disp(strcat('color1: ', colorOne));
-                disp(strcat('color2: ', colorTwo));
-                disp(strcat('color3: ', colorThree));
-                disp(strcat('shape1: ', shapeOne));
-                disp(strcat('shape2: ', shapeTwo));
-                disp(strcat('shape3: ', shapeThree));
             end
             
             % Check experiment type.
