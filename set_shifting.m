@@ -36,8 +36,9 @@ function set_shifting(monkeysInitial)
       rewardDuration      = 0.12;          % How long the juicer is open.
       trackedEye          = 1;             % Tracked eye (left: 1, right: 2).
       sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
-      experimentType      = 'intraShift';  % Values: 'colorShift', 'shapeShift',
-                                           %         'intraSS', or 'extraSS'. 
+      experimentType      = 'intraSS';     % Values: 'colorShift', 'shapeShift',
+                                           %         'intraSS', or 'extraSS'.
+      sessionDimension    = 'random';      % Values: 'color', 'shape', or 'random'.
       
       % Warning: Only change these vars when using 'colorShift' or 'shapeShift'.
       colorShiftNumColors = 3;             % Number of colors to use. Values: 2 or 3.
@@ -154,7 +155,6 @@ function set_shifting(monkeysInitial)
     shapeOne           = '';
     shapeTwo           = '';
     shapeThree         = '';
-    sessionDimension   = '';
     lastBlockValue     = '';
     
     % Color shift trial info.
@@ -711,11 +711,13 @@ function set_shifting(monkeysInitial)
                 colorTwo = color2;
                 colorThree = color3;
 
-                % Randomly choose a dimension to use for this entire session.
-                tempArray = [{'color'}, {'shape'}];
-                randIndex = rand_int(1);
-                sessionDimension = char(tempArray(randIndex));
-
+                % Set a random dimension to use for this entire session if requested.
+                if strcmp(sessionDimension, 'random')
+                    tempArray = [{'color'}, {'shape'}];
+                    randIndex = rand_int(1);
+                    sessionDimension = char(tempArray(randIndex));
+                end
+                disp(sessionDimension);
                 % Set the correct answer type.
                 if strcmp(sessionDimension, 'color')
                     trialValue = colorOne;
@@ -890,33 +892,15 @@ function set_shifting(monkeysInitial)
                 
                 lastBlockValue = trialValue;
             end
-        elseif strcmp(experimentType, 'extraSS')
-            % Choose a dimension.
-            randIndex = rand_int(1);
-            dim = char(dimension(randIndex));
-            
-            % Choose a value for that dimension.
-            randValIndex = rand_int(2);
-            if strcmp(dim, 'color')
-                value = char(colors(randValIndex));
-            elseif strcmp(dim, 'shape')
-                value = char(shapes(randValIndex));
-            end
-            
-            % Set the correct answer type.
-            temp(currTrial).type  = 'extraSS';
-            temp(currTrial).dimension = dim;
-            temp(currTrial).value = value;
         % THIS PART BELOW IS NOT CURRENTLY WORKING (reversal).
         elseif strcmp(experimentType, 'reversal')
             randValIndex1 = rand_int(2);
             randValIndex2 = rand_int(2);
-
+            
             % Choose a correct answer value for the reversal experiment.
             tempColor = colors(randValIndex1);
             tempShape = shapes(randValIndex2);
             val = strcat(char(tempShape), ';', char(tempColor));
-            
             
             % Set the correct answer type.
             temp(currTrial).type  = 'reversal';
@@ -990,7 +974,6 @@ function set_shifting(monkeysInitial)
                 
                 % Note the location of the correct choice.
                 corrAnsObject(currTrial).correct = correctSpot;
-                disp(strcat('correct spot if: ', correctSpot));
                 lastCorrPos = correctSpot;
             % Make sure the correct choice is not in the same location.
             else
@@ -1044,7 +1027,6 @@ function set_shifting(monkeysInitial)
 
                 % Note the location of the correct choice.
                 corrAnsObject(currTrial).correct = correctSpot;
-                disp(strcat('correct spot else: ', correctSpot));
                 lastCorrPos = correctSpot;
             end
         elseif strcmp(experimentType, 'colorShift')
