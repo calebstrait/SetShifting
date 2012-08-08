@@ -34,28 +34,28 @@ function set_shifting(monkeysInitial)
     
       numCorrectToShift   = 3;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      trackedEye          = 2;             % Tracked eye. Values: 1 (left), 2 (right).
+      trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
       experimentType      = 'extraSS';     % Values: 'colorShift', 'shapeShift',
                                            %         'intraSS', or 'extraSS'.
-      sessionDimension    = 'shape';      % Allows for control of the session
+      sessionDimension    = 'color';       % Values: 'color', 'shape', or 'random'.
+                                           %         Allows for control of the session
                                            %         dimension (color or shape).
-                                           %         Values: 'color', 'shape', or 'random'.
                                            %         NOTE1: This has no effect when
                                            %         'allRandom' is set to 'yes'.
                                            %         NOTE2: This variable only sets the
                                            %         starting dimension in the 'extraSS' task.
-      allRandom           = 'yes';         % Makes correct choice, dimension shifted to, 
+      allRandom           = 'yes';         % Values: 'yes' or 'no'. Makes correct 
+                                           %         choice, dimension shifted to, 
                                            %         and stimuli positioning random.
-                                           %         Values: 'yes' or 'no'.
                                            %         NOTE: Only works when
                                            %         'experimentType' is set to
                                            %         'intraSS' or 'extraSS'.
-      colorShiftNumColors = 3;             % Number of colors to use. Values: 2 or 3.
+      colorShiftNumColors = 3;             % Values: 2 or 3. Number of colors to use.
                                            %         NOTE: Only change this
                                            %         var when 'experimentType is
                                            %         set to 'colorShift'.
-      shapeShiftNumShapes = 3;             % Number of shapes to use. Values: 2 or 3.
+      shapeShiftNumShapes = 3;             % Values: 2 or 3. Number of shapes to use.
                                            %         NOTE: Only change this
                                            %         var when 'experimentType is
                                            %         set to 'shapeShift'.
@@ -996,7 +996,7 @@ function set_shifting(monkeysInitial)
                 lastBlockValue = trialValue;
             end
         elseif strcmp(experimentType, 'reversal')
-            % CURRENTLY NOT WORKING.
+            % THIS CONDITION IS NOT CURRENTLY SUPPORTED.
         else
             disp('Error in generate_correct_answer.');
         end
@@ -1021,7 +1021,8 @@ function set_shifting(monkeysInitial)
             % THIS CONDITION IS NOT CURRENTLY SUPPORTED.
         elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
             % Just generate a random location for the correct choice.
-            if currTrial == 1
+            if currTrial == 1 || strcmp(allRandom, 'yes')
+                disp('ALL RANDOM');
                 % Randomly select positions for each stimulus.
                 randIndex1 = rand_int(2);
                 randIndex2 = rand_int(1);
@@ -1598,7 +1599,7 @@ function set_shifting(monkeysInitial)
             
             % Check experiment type.
             if strcmp(experimentType, 'reversal')
-                % REVERSAL CURRENTLY NOT WORKING.
+                % THIS CONDITION IS NOT CURRENTLY SUPPORTED.
                 trialObject = generate_trial_stimuli; % Make sure to generate some stimuli!
             elseif strcmp(experimentType, 'intraSS') || ...
                    strcmp(experimentType, 'extraSS') || ...
