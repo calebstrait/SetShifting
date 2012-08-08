@@ -34,6 +34,12 @@ function set_shifting(monkeysInitial)
     
       numCorrectToShift   = 3;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
+      lookAtStimTime      = 0.2;           % How long fixation must be held on a
+                                           %         a stimulus to advance trial during
+                                           %         initial stimuli presentation.
+      interStimulusDelay  = 0.6;           % Delay between stimulus presentations
+                                           %         during recorded
+                                           %         sessions.
       trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
       experimentType      = 'extraSS';     % Values: 'colorShift', 'shapeShift',
@@ -250,6 +256,58 @@ function set_shifting(monkeysInitial)
                         % Fixation was obtained for desired duration.
                         fixation = true;
                         area = 'single';
+                        
+                        return;
+                    end
+                end
+            % Determine if eye is within the left option boundary.
+            elseif strcmp(type, 'singleLeft')
+                % Determine if eye is within the left option boundary.
+                if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
+                   yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(leftBoundXMin, leftBoundXMax, ...
+                                                    leftBoundYMin, leftBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'left';
+                        
+                        return;
+                    end
+                end
+            % Determine if eye is within the right option boundary.
+            elseif strcmp(type, 'singleRight')
+                if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
+                   yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(rightBoundXMin, rightBoundXMax, ...
+                                                    rightBoundYMin, rightBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'right';
+                        
+                        return;
+                    end
+                end
+            % Determine if eye is within the top option boundary.
+            elseif strcmp(type, 'singleTop')
+                if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
+                   yCoord >= topBoundYMin && yCoord <= topBoundYMax
+                    % Determine if eye maintained fixation for given duration.
+                    checkFixBreak = fix_break_check(topBoundXMin, topBoundXMax, ...
+                                                    topBoundYMin, topBoundYMax, ...
+                                                    duration);
+                    
+                    if checkFixBreak == false
+                        % Fixation was obtained for desired duration.
+                        fixation = true;
+                        area = 'top';
                         
                         return;
                     end
@@ -1622,9 +1680,10 @@ function set_shifting(monkeysInitial)
                         % Start trial over because fixation wasn't held.
                         run_single_trial;
                     else
+                        % Redraw all choices without fixation dot.
                         inHoldingState = false;
                         unstaggered_stimuli('none;none');
-
+                        
                         fixatingOnTarget = false;
                         while ~fixatingOnTarget
                             % Check for fixation on any three targets.
@@ -1679,7 +1738,7 @@ function set_shifting(monkeysInitial)
                         end
                     end
                 else
-                    % THIS PORTION CURRENTLY NOT WORKING (reversal).
+                    % THIS PORTION CURRENTLY NOT WORKING.
                     staggered_stimuli;
                 end
             else
@@ -1766,6 +1825,246 @@ function set_shifting(monkeysInitial)
         window = Screen('OpenWindow', monkeyScreen, colorBackground);
     end
     
+    function staggered_stimuli()
+        % Make sure correct stimuli object index is used.
+        if passedTrial
+            currTrialNumForObj = currTrial;
+        else
+            currTrialNumForObj = currTrialAtError;
+        end
+        
+        left = strsplit(trialObject(currTrialNumForObj).left, ';');
+        right = strsplit(trialObject(currTrialNumForObj).right, ';');
+        top = strsplit(trialObject(currTrialNumForObj).top, ';');
+        
+        % Take the fixation dot off the screen.
+        Screen('FillOval', window, colorBackground, [centerX - dotRadius + fixAdj; ...
+                                                     centerY - dotRadius; ...
+                                                     centerX + dotRadius - fixAdj; ...
+                                                     centerY + dotRadius]);
+        
+        % Display stimuli in a random order with required fixation.
+        randIndices = randperm(3);
+        for index = 1:3
+            % Get a random index to choose a random stimulus presentation position.
+            randIndex = randIndices(index);
+            
+            if strcmp(char(positions(randIndex)), 'left')
+                % Draw a CIRCLE in LEFT position if needed.
+                if strcmp(left(1), 'circle')
+                    if strcmp(left(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(left(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display circle.
+                    draw_circle('left', 'solid', colorFill, 'none');
+                    
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleLeft', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide circle.
+                    draw_circle('left', 'solid', colorBackground, 'none');
+                end
+                
+                % Draw a STAR in LEFT position if needed.
+                if strcmp(left(1), 'star')
+                    if strcmp(left(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(left(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display star.
+                    draw_star('left', 'solid', colorFill, 'none');
+                    
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleLeft', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide star.
+                    draw_star('left', 'solid', colorBackground, 'none');
+                end
+                
+                % Draw a TRIANGLE in LEFT position if needed.
+                if strcmp(left(1), 'triangle')
+                    if strcmp(left(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(left(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display triangle.
+                    draw_triangle('left', 'solid', colorFill, 'none');
+
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleLeft', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide triangle.
+                    draw_triangle('left', 'solid', colorBackground, 'none');
+                end
+            elseif strcmp(char(positions(randIndex)), 'right')
+                % Draw a CIRCLE in RIGHT position if needed.
+                if strcmp(right(1), 'circle')
+                    if strcmp(right(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(right(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display circle.
+                    draw_circle('right', 'solid', colorFill, 'none');
+                    
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleRight', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide circle.
+                    draw_circle('right', 'solid', colorBackground, 'none');
+                end
+                
+                % Draw a STAR in RIGHT position if needed.
+                if strcmp(right(1), 'star')
+                    if strcmp(right(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(right(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display star.
+                    draw_star('right', 'solid', colorFill, 'none')
+
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleRight', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide star.
+                    draw_star('right', 'solid', colorBackground, 'none');
+                end
+                
+                % Draw a TRIANGLE in RIGHT position if needed.
+                if strcmp(right(1), 'triangle')
+                    if strcmp(right(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(right(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display triangle.
+                    draw_triangle('right', 'solid', colorFill, 'none');
+                    
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleRight', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide triangle.
+                    draw_triangle('right', 'solid', colorBackground, 'none');
+                end
+            elseif strcmp(char(positions(randIndex)), 'top')
+                % Draw a CIRCLE in TOP position if needed.
+                if strcmp(top(1), 'circle')
+                    if strcmp(top(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(top(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display circle.
+                    draw_circle('top', 'solid', colorFill, 'none');
+                    
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleTop', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide circle.
+                    draw_circle('top', 'solid', colorBackground, 'none');
+                end
+                
+                % Draw a STAR in TOP position if needed.
+                if strcmp(top(1), 'star')
+                    if strcmp(top(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(top(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display star.
+                    draw_star('top', 'solid', colorFill, 'none');
+                    
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleTop', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide star.
+                    draw_star('top', 'solid', colorBackground, 'none');
+                end
+                
+                % Draw a TRIANGLE in TOP position if needed.
+                if strcmp(top(1), 'triangle')
+                    if strcmp(top(2), 'cyan')
+                        colorFill = colorCyan;
+                    elseif strcmp(top(2), 'magenta')
+                        colorFill = colorMagenta;
+                    else
+                        colorFill = colorYellow;
+                    end
+                    
+                    % Display triangle.
+                    draw_triangle('top', 'solid', colorFill, 'none');
+
+                    fixOnSingleTarget = false;
+                    while ~fixOnSingleTarget
+                        % Check for fixation on displayed target.
+                        [fixOnSingleTarget, ~] = check_fixation('singleTop', lookAtStimTime, timeToFix);
+                    end
+                    
+                    % Hide triangle.
+                    draw_triangle('top', 'solid', colorBackground, 'none');
+                end
+            end
+            
+            % Delay between stimulus presentations.
+            WaitSecs(interStimulusDelay);
+        end
+        
+        Screen('Flip', window);
+    end
+    
     function points = star_points(centerColVector, armLength)
         innerPoints   = zeros(2, 5);        % Preallocate space for inner points.
         outerPoints   = zeros(2, 5);        % Preallocate space for outer points.
@@ -1836,8 +2135,8 @@ function set_shifting(monkeysInitial)
         points = starPoints;
     end
 
-    function unstaggered_stimuli(outerColor)
-        input = strsplit(outerColor, ';');
+    function unstaggered_stimuli(lookingStatus)
+        input = strsplit(lookingStatus, ';');
         status = input(1);
         spot = input(2);
         
