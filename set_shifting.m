@@ -32,15 +32,14 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 3;             % Number correct trials before shift.
+      numCorrectToShift   = 20;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      lookAtStimTime      = 0.2;           % How long fixation must be held on a
-                                           %         a stimulus to advance trial during
+      stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
                                            %         staggered stimuli session.
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
-      trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
+      trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       experimentType      = 'extraSS';     % Values: 'colorShift', 'shapeShift',
                                            %         'intraSS', or 'extraSS'.
@@ -92,7 +91,7 @@ function set_shifting(monkeysInitial)
     fixAdjLROutside = 175;  % Amount to stretch out L & R option outside sides from original.
     fixAdjLRTop     = 40;   % Amount to stretch up L & R option fix bounds from original.
     fixAdjTTopSide  = 50;   % Amount to stretch up top option fix bounds from original.
-    fixAdjTOutside  = 415;  % Amount to stretch out top option outside sides from original.
+    fixAdjTOutside  = 118; %415;  % Amount to stretch out top option outside sides from original.
     
     % Values to calculate fixation boxes.
     fixBoundXMax    = centerX + hfWidth;
@@ -1676,7 +1675,7 @@ function set_shifting(monkeysInitial)
                     fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
                                                     fixBoundYMin, fixBoundYMax, ...
                                                     chooseHoldFixTime);
-                    
+                                 
                     if fixationBreak
                         % Start trial over because fixation wasn't held.
                         run_single_trial;
@@ -1688,9 +1687,19 @@ function set_shifting(monkeysInitial)
                 elseif strcmp(sessionType, 'staggered')
                     staggered_stimuli;
                     
-                    % Use unstaggered function to draw all 3 options at once.
-                    inHoldingState = false;
+                    % Use unstaggered function to draw all 3 options at once with required fixation.
                     unstaggered_stimuli('none;none');
+                    
+                    % Check for fixation.
+                    [refixating, ~] = check_fixation('single', minFixTime, timeToFix);
+                    
+                    if ~refixating
+                        % Start trial over because fixation wasn't held.
+                        run_single_trial;
+                    else
+                        inHoldingState = false;
+                        unstaggered_stimuli('none;none');
+                    end
                 end
                 
                 fixatingOnTarget = false;
@@ -1875,11 +1884,7 @@ function set_shifting(monkeysInitial)
                     draw_circle('left', 'solid', colorFill, 'none');
                     Screen('Flip', window);
                     
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleLeft', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide circle.
                     draw_circle('left', 'solid', colorBackground, 'none');
@@ -1899,11 +1904,7 @@ function set_shifting(monkeysInitial)
                     draw_star('left', 'solid', colorFill, 'none');
                     Screen('Flip', window);
                     
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleLeft', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide star.
                     draw_star('left', 'solid', colorBackground, 'none');
@@ -1923,11 +1924,7 @@ function set_shifting(monkeysInitial)
                     draw_triangle('left', 'solid', colorFill, 'none');
                     Screen('Flip', window);
 
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleLeft', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide triangle.
                     draw_triangle('left', 'solid', colorBackground, 'none');
@@ -1947,11 +1944,7 @@ function set_shifting(monkeysInitial)
                     draw_circle('right', 'solid', colorFill, 'none');
                     Screen('Flip', window);
                     
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleRight', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide circle.
                     draw_circle('right', 'solid', colorBackground, 'none');
@@ -1971,11 +1964,7 @@ function set_shifting(monkeysInitial)
                     draw_star('right', 'solid', colorFill, 'none');
                     Screen('Flip', window);
 
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleRight', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide star.
                     draw_star('right', 'solid', colorBackground, 'none');
@@ -1995,11 +1984,7 @@ function set_shifting(monkeysInitial)
                     draw_triangle('right', 'solid', colorFill, 'none');
                     Screen('Flip', window);
                     
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleRight', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide triangle.
                     draw_triangle('right', 'solid', colorBackground, 'none');
@@ -2019,11 +2004,7 @@ function set_shifting(monkeysInitial)
                     draw_circle('top', 'solid', colorFill, 'none');
                     Screen('Flip', window);
                     
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleTop', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide circle.
                     draw_circle('top', 'solid', colorBackground, 'none');
@@ -2043,11 +2024,7 @@ function set_shifting(monkeysInitial)
                     draw_star('top', 'solid', colorFill, 'none');
                     Screen('Flip', window);
                     
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleTop', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide star.
                     draw_star('top', 'solid', colorBackground, 'none');
@@ -2067,11 +2044,7 @@ function set_shifting(monkeysInitial)
                     draw_triangle('top', 'solid', colorFill, 'none');
                     Screen('Flip', window);
 
-                    fixOnSingleTarget = false;
-                    while ~fixOnSingleTarget
-                        % Check for fixation on displayed target.
-                        [fixOnSingleTarget, ~] = check_fixation('singleTop', lookAtStimTime, timeToFix);
-                    end
+                    WaitSecs(stimFlashTime);
                     
                     % Hide triangle.
                     draw_triangle('top', 'solid', colorBackground, 'none');
