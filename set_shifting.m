@@ -36,15 +36,15 @@ function set_shifting(monkeysInitial)
       rewardDuration      = 0.12;          % How long the juicer is open.
       lookAtStimTime      = 0.2;           % How long fixation must be held on a
                                            %         a stimulus to advance trial during
-                                           %         initial stimuli presentation.
+                                           %         initial stimuli presentation during a
+                                           %         staggered stimuli session.
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
-                                           %         during recorded
-                                           %         sessions.
+                                           %         during staggered stimuli sessions.
       trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
-      sessionType         = 'behavior';    % Values: 'behavior' or 'recording'.
+      sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       experimentType      = 'extraSS';     % Values: 'colorShift', 'shapeShift',
                                            %         'intraSS', or 'extraSS'.
-      sessionDimension    = 'color';       % Values: 'color', 'shape', or 'random'.
+      sessionDimension    = 'random';      % Values: 'color', 'shape', or 'random'.
                                            %         Allows for control of the session
                                            %         dimension (color or shape).
                                            %         NOTE1: This has no effect when
@@ -1080,7 +1080,6 @@ function set_shifting(monkeysInitial)
         elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
             % Just generate a random location for the correct choice.
             if currTrial == 1 || strcmp(allRandom, 'yes')
-                disp('ALL RANDOM');
                 % Randomly select positions for each stimulus.
                 randIndex1 = rand_int(2);
                 randIndex2 = rand_int(1);
@@ -1627,7 +1626,7 @@ function set_shifting(monkeysInitial)
                 currBlockTrial = 0;
                 numCorrTrials = 0;
                 shifts = shifts + 1;
-                    
+                
                 % Increment a shift counter.
                 if strcmp(experimentType, 'colorShift')
                     colorSetUnits = colorSetUnits + 1;
@@ -1667,79 +1666,83 @@ function set_shifting(monkeysInitial)
                 if passedTrial
                     trialObject = generate_trial_stimuli;
                 end
-
-                if strcmp(sessionType, 'behavior')
+                
+                % Run a staggered stimuli presentation session.
+                if strcmp(sessionType, 'unstaggered')
                     unstaggered_stimuli('none;none');
                     
                     % Make sure fixation is held before a target is chosen.
                     fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
                                                     fixBoundYMin, fixBoundYMax, ...
                                                     chooseHoldFixTime);
-
+                    
                     if fixationBreak
                         % Start trial over because fixation wasn't held.
                         run_single_trial;
                     else
-                        % Redraw all choices without fixation dot.
                         inHoldingState = false;
                         unstaggered_stimuli('none;none');
+                    end
+                % Run an unstaggered stimuli presentation session.
+                elseif strcmp(sessionType, 'staggered')
+                    staggered_stimuli;
+                    
+                    % Use unstaggered function to draw all 3 options at once.
+                    inHoldingState = false;
+                    unstaggered_stimuli('none;none');
+                end
+                
+                fixatingOnTarget = false;
+                while ~fixatingOnTarget
+                    % Check for fixation on any three targets.
+                    [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
+                    
+                    if fixatingOnTarget
+                        % Fetch correct location.
+                        if passedTrial
+                            currTrialNumForObj = currTrial;
+                        else
+                            currTrialNumForObj = currTrialAtError;
+                        end
                         
-                        fixatingOnTarget = false;
-                        while ~fixatingOnTarget
-                            % Check for fixation on any three targets.
-                            [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
-
-                            if fixatingOnTarget
-                                % Fetch correct location.
-                                if passedTrial
-                                    currTrialNumForObj = currTrial;
-                                else
-                                    currTrialNumForObj = currTrialAtError;
-                                end
-                                
-                                correctSpot = corrAnsObject(currTrialNumForObj).correct;
-
-                                if strcmp(area, correctSpot)
-                                    % Display feedback stimuli and give reward.
-                                    unstaggered_stimuli(strcat('correct', ';', area));
-                                    reward(rewardDuration);
-                                    WaitSecs(feedbackTime);
-
-                                    % Update.
-                                    chosenPosition = area;
-                                    numCorrTrials = numCorrTrials + 1;
-                                    passedTrial = true;
-                                    rewarded = 'yes';
-                                    totalNumCorrTrials = totalNumCorrTrials + 1;
-                                    trialOutcome = 'correct';
-
-                                    % Save trial data.
-                                    send_and_save;
-                                else
-                                    % Display feedback stimuli.
-                                    unstaggered_stimuli(strcat('incorrect', ';', area));
-                                    WaitSecs(feedbackTime);
-                                    
-                                    % Only reset error trial tracker if this is the first error in a row.
-                                    if passedTrial
-                                        currTrialAtError = currTrial;
-                                    end
-                                    
-                                    % Update.
-                                    chosenPosition = area;
-                                    passedTrial = false;
-                                    rewarded = 'no';
-                                    trialOutcome = 'incorrect';
-
-                                    % Save trial data.
-                                    send_and_save;
-                                end
+                        correctSpot = corrAnsObject(currTrialNumForObj).correct;
+                        
+                        if strcmp(area, correctSpot)
+                            % Display feedback stimuli and give reward.
+                            unstaggered_stimuli(strcat('correct', ';', area));
+                            reward(rewardDuration);
+                            WaitSecs(feedbackTime);
+                            
+                            % Update.
+                            chosenPosition = area;
+                            numCorrTrials = numCorrTrials + 1;
+                            passedTrial = true;
+                            rewarded = 'yes';
+                            totalNumCorrTrials = totalNumCorrTrials + 1;
+                            trialOutcome = 'correct';
+                            
+                            % Save trial data.
+                            send_and_save;
+                        else
+                            % Display feedback stimuli.
+                            unstaggered_stimuli(strcat('incorrect', ';', area));
+                            WaitSecs(feedbackTime);
+                            
+                            % Only reset error trial tracker if this is the first error in a row.
+                            if passedTrial
+                                currTrialAtError = currTrial;
                             end
+                            
+                            % Update.
+                            chosenPosition = area;
+                            passedTrial = false;
+                            rewarded = 'no';
+                            trialOutcome = 'incorrect';
+                            
+                            % Save trial data.
+                            send_and_save;
                         end
                     end
-                else
-                    % THIS PORTION CURRENTLY NOT WORKING.
-                    staggered_stimuli;
                 end
             else
                 disp('Experiment started with an illegal value for the "experimentType" parameter.');
@@ -1842,6 +1845,7 @@ function set_shifting(monkeysInitial)
                                                      centerY - dotRadius; ...
                                                      centerX + dotRadius - fixAdj; ...
                                                      centerY + dotRadius]);
+        Screen('Flip', window);
         
         % Display stimuli in a random order with required fixation.
         randIndices = randperm(3);
@@ -1862,6 +1866,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display circle.
                     draw_circle('left', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
                     
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -1885,6 +1890,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display star.
                     draw_star('left', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
                     
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -1908,6 +1914,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display triangle.
                     draw_triangle('left', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
 
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -1931,6 +1938,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display circle.
                     draw_circle('right', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
                     
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -1953,7 +1961,8 @@ function set_shifting(monkeysInitial)
                     end
                     
                     % Display star.
-                    draw_star('right', 'solid', colorFill, 'none')
+                    draw_star('right', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
 
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -1977,6 +1986,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display triangle.
                     draw_triangle('right', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
                     
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -2000,6 +2010,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display circle.
                     draw_circle('top', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
                     
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -2023,6 +2034,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display star.
                     draw_star('top', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
                     
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -2046,6 +2058,7 @@ function set_shifting(monkeysInitial)
                     
                     % Display triangle.
                     draw_triangle('top', 'solid', colorFill, 'none');
+                    Screen('Flip', window);
 
                     fixOnSingleTarget = false;
                     while ~fixOnSingleTarget
@@ -2061,8 +2074,6 @@ function set_shifting(monkeysInitial)
             % Delay between stimulus presentations.
             WaitSecs(interStimulusDelay);
         end
-        
-        Screen('Flip', window);
     end
     
     function points = star_points(centerColVector, armLength)
