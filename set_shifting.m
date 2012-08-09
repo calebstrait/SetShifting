@@ -158,6 +158,7 @@ function set_shifting(monkeysInitial)
     inHoldingState     = true;
     numCorrTrials      = 0;
     positions          = [{'left'}, {'right'}, {'top'}];
+    prevStimPresOrder  = [];
     shapes             = [{'circle'}, {'star'}, {'triangle'}];
     totalNumCorrTrials = 0;
     totalPercentCorr   = 0;
@@ -1847,8 +1848,15 @@ function set_shifting(monkeysInitial)
                                                      centerY + dotRadius]);
         Screen('Flip', window);
         
+        % Make sure stimuli are presented in same order if prev trial failed. 
+        if passedTrial
+            randIndices = randperm(3);
+            prevStimPresOrder = randIndices;
+        else
+            randIndices = prevStimPresOrder;
+        end
+        
         % Display stimuli in a random order with required fixation.
-        randIndices = randperm(3);
         for index = 1:3
             % Get a random index to choose a random stimulus presentation position.
             randIndex = randIndices(index);
