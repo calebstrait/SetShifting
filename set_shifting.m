@@ -1764,7 +1764,6 @@ function set_shifting(monkeysInitial)
         data(currTrial).totalPercentCorr = totalPercentCorr; % Total percent correct for this experiment.
         data(currTrial).trialStimuli = trialObject;          % All stimuli and their positions.
         data(currTrial).rewarded = rewarded;                 % Whether or not a reward was given.
-        data(currTrial).rewardDuration = rewardDuration;     % Duration that juicer was open.
         data(currTrial).timeToFixate = timeToFix;            % Max allowed for all fixations.
         data(currTrial).minFixTimeToStart = minFixTime;      % Fixatin time needed to start task.
         data(currTrial).holdFixTime = holdFixTime;           % Fixation duration to select an object.
