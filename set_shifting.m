@@ -32,14 +32,14 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 20;            % Number correct trials before shift.
+      numCorrectToShift   = 3;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
       stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
                                            %         staggered stimuli session.
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
-      trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
+      trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       experimentType      = 'extraSS';     % Values: 'colorShift', 'shapeShift',
                                            %         'intraSS', or 'extraSS'.
@@ -131,6 +131,9 @@ function set_shifting(monkeysInitial)
     
     % Saving.
     data               = struct([]);          % Workspace variable where trial data is saved.
+    stimOneFlashed     = 'N/A';               % The first staggered stimulus presented.
+    stimTwoFlashed     = 'N/A';               % The second staggered stimulus presented.
+    stimThreeFlashed   = 'N/A';               % The third staggered stimulus presented.
     saveCommand        = NaN;                 % Command string that will save .mat files.         
     setShiftingData    = '/Data/SetShifting'; % Directory where .mat files are saved.
     varName            = 'data';              % Name of the var to save in the workspace.
@@ -1772,6 +1775,9 @@ function set_shifting(monkeysInitial)
         data(currTrial).blockPercentCorr = blockPercentCorr; % Total percent correct for this block.
         data(currTrial).totalPercentCorr = totalPercentCorr; % Total percent correct for this experiment.
         data(currTrial).trialStimuli = trialObject;          % All stimuli and their positions.
+        data(currTrial).firstFlashedStim = stimOneFlashed;   % The first staggered stimulus presented.
+        data(currTrial).secondFlashedStim = stimTwoFlashed;  % The second staggered stimulus presented.
+        data(currTrial).thirdFlashedStim = stimThreeFlashed; % The third staggered stimulus presented.
         data(currTrial).rewarded = rewarded;                 % Whether or not a reward was given.
         data(currTrial).timeToFixate = timeToFix;            % Max allowed for all fixations.
         data(currTrial).minFixTimeToStart = minFixTime;      % Fixatin time needed to start task.
@@ -1856,7 +1862,7 @@ function set_shifting(monkeysInitial)
                                                      centerY + dotRadius]);
         Screen('Flip', window);
         
-        % Make sure stimuli are presented in same order if prev trial failed. 
+        % Make sure stimuli are presented in same order if prev trial failed.
         if passedTrial
             randIndices = randperm(3);
             prevStimPresOrder = randIndices;
@@ -1864,7 +1870,12 @@ function set_shifting(monkeysInitial)
             randIndices = prevStimPresOrder;
         end
         
-        % Display stimuli in a random order with required fixation.
+        % Store the order stimuli were flashed.
+        stimOneFlashed = positions(randIndices(1));
+        stimTwoFlashed = positions(randIndices(2));
+        stimThreeFlashed = positions(randIndices(3));
+        
+        % Display stimuli in a random order.
         for index = 1:3
             % Get a random index to choose a random stimulus presentation position.
             randIndex = randIndices(index);
