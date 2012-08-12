@@ -35,7 +35,7 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 + 4074 - looking away from previously looked at choice
 + 4075 - fixation acquired on an option
 
-## Data saved to .mat files and sent to Plexon
+## Trial data sent to Plexon
 
 + trial number             
 + trial outcome
@@ -77,7 +77,7 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 	+ 0 = not rewarded
 	+ 1 = was rewarded)		
 + time allowed to fixate on fixation dot (sends over 15000 if this value is intmax; otherwise it sends the actual value, which is multiplied by 1000 if the value is less than 1)
-+ minimum fixation time on fixation dot to initial trial (multiplied by 1000 if the value is less than 1)		
++ minimum fixation time on fixation dot to initiate trial (multiplied by 1000 if the value is less than 1)		
 + duration that feedback is displayed (multiplied by 1000 if the value is less than 1)		
 + ITI (multiplied by 1000 if the value is less than 1)
 + experiment type
