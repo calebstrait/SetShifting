@@ -38,45 +38,57 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 ## Data saved to .mat files and sent to Plexon
 
 + trial number             
-+ trial outcome (0 = incorrect, 1 = correct)
-+ choice made (1 = top, 2 = left, 3 = right)
++ trial outcome
+	+ 0 = incorrect
+	+ 1 = correct
++ choice made
+	+ 1 = top
+	+ 2 = left
+	+ 3 = right
 + block percent correct (whole percentage)
 + total percent correct (whole percentage)
-+ trial stimulus in top position:
++ trial stimulus in top position
 	+ 11 = circle, cyan
- + 12 = circle, magenta
-	++ 13 = circle, yellow
-	++ 21 = star, cyan
-	++ 22 = star, magenta
-	++ 23 = star, yellow
-	++ 31 = triangle, cyan
-	++ 32 = triangle, magenta
-	++ 33 = triangle, yellow
+	+ 12 = circle, magenta
+	+ 13 = circle, yellow
+	+ 21 = star, cyan
+	+ 22 = star, magenta
+	+ 23 = star, yellow
+	+ 31 = triangle, cyan
+	+ 32 = triangle, magenta
+	+ 33 = triangle, yellow
 + trial stimulus in left position:
-	++ same encoding as above
+	+ same encoding as above
 + trial stimulus in right position:
-	++ same encoding as above
+	+ same encoding as above
 + position displayed first in staggered presentation
-	++ 1 = top
-	++ 2 = left
-	++ 3 = right
+	+ 1 = top
+	+ 2 = left
+	+ 3 = right
 + position displayed second in staggered presentation
-	++ 1 = top
-	++ 2 = left
-	++ 3 = right
+	+ 1 = top
+	+ 2 = left
+	+ 3 = right
 + position displayed third in staggered presentation
-	++ 1 = top
-	++ 2 = left
-	++ 3 = right
+	+ 1 = top
+	+ 2 = left
+	+ 3 = right
 + rewarded or not
-	++ 0 = not rewarded
-	++ 1 = was rewarded)		
+	+ 0 = not rewarded
+	+ 1 = was rewarded)		
 + time allowed to fixate on fixation dot (sends over 15000 if this value is intmax; otherwise it sends the actual value, which is multiplied by 1000 if the value is less than 1)
 + minimum fixation time on fixation dot to initial trial (multiplied by 1000 if the value is less than 1)		
 + duration that feedback is displayed (multiplied by 1000 if the value is less than 1)		
 + ITI (multiplied by 1000 if the value is less than 1)
-+ experiment type (1 = intra-dimensional, 2 = extra-dimensional, 3 = reversal)
-+ session type (1 = unstaggered, 2 = staggered)
++ experiment type
+	+ 1 = intra-dimensional
+	+ 2 = extra-dimensional
+	+ 3 = reversal
++ session type
+	+ 1 = unstaggered
+	+ 2 = staggered
 + correct choices until shift occurs
 + total number of shifts that occurred during the session
-+ which eye was tracked (1 = left, 2 = right)
++ which eye was tracked
+	+ 1 = left
+	+ 2 = right
