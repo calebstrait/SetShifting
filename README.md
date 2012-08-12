@@ -43,8 +43,8 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 + block percent correct (whole percentage)
 + total percent correct (whole percentage)
 + trial stimulus in top position:
-	++ 11 = circle, cyan
-	++ 12 = circle, magenta
+	+ 11 = circle, cyan
+ + 12 = circle, magenta
 	++ 13 = circle, yellow
 	++ 21 = star, cyan
 	++ 22 = star, magenta
