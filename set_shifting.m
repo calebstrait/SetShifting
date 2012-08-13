@@ -32,7 +32,7 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 3;             % Number correct trials before shift.
+      numCorrectToShift   = 10;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
       stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
@@ -1680,7 +1680,7 @@ function set_shifting(monkeysInitial)
         % Notify Plexon that all stimuli have disappeared and that the fixation dot appeared.
         if recordWithPlexon
             % All stimli gone.
-            toplexon(5015);
+            toplexon(5012);
             % Fixation dot displayed.
             toplexon(5001);
         end
@@ -1745,6 +1745,12 @@ function set_shifting(monkeysInitial)
                 % Only make new stimuli if the trial is passed.
                 if passedTrial
                     trialObject = generate_trial_stimuli;
+                else
+                    newObj = struct([]);
+                    newObj(currTrial).left = trialObject(currTrial - 1).left;
+                    newObj(currTrial).right = trialObject(currTrial - 1).right;
+                    newObj(currTrial).top = trialObject(currTrial - 1).top;
+                    trialObject = newObj;
                 end
                 
                 % Run a staggered stimuli presentation session.
@@ -1755,7 +1761,7 @@ function set_shifting(monkeysInitial)
                     fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
                                                     fixBoundYMin, fixBoundYMax, ...
                                                     chooseHoldFixTime);
-                                 
+                    
                     if fixationBreak
                         % Start trial over because fixation wasn't held.
                         run_single_trial;
@@ -1868,12 +1874,6 @@ function set_shifting(monkeysInitial)
     
     % Saves trial data to a .mat file.
     function send_and_save()
-        if passedTrial
-            adjTrialNum = currTrial;
-        else
-            adjTrialNum = currTrialAtError;
-        end
-            
         if recordWithPlexon
             % Prepare data for being sent to Plexon.
             if strcmp(trialOutcome, 'correct')
@@ -1881,7 +1881,7 @@ function set_shifting(monkeysInitial)
             else
                 correctStatus = 0;
             end
-
+            
             if strcmp(chosenPosition, 'left')
                 selectedOption = 2;
             elseif strcmp(chosenPosition, 'right')
@@ -1890,10 +1890,10 @@ function set_shifting(monkeysInitial)
                 selectedOption = 1;
             end
             
-            leftOption = trialObject(adjTrialNum).left;
-            rightOption = trialObject(adjTrialNum).right;
-            topOption = trialObject(adjTrialNum).top;
-
+            leftOption = trialObject(currTrial).left;
+            rightOption = trialObject(currTrial).right;
+            topOption = trialObject(currTrial).top;
+            
             if strcmp(topOption, 'circle;cyan')
                 topOptionCode = 11;
             elseif strcmp(topOption, 'circle;magenta')
@@ -2076,7 +2076,7 @@ function set_shifting(monkeysInitial)
         data(currTrial).choiceMade = chosenPosition;         % Location on screen that was chosen.
         data(currTrial).blockPercentCorr = blockPercentCorr; % Total percent correct for this block.
         data(currTrial).totalPercentCorr = totalPercentCorr; % Total percent correct for this experiment.
-        data(currTrial).trialStimuli = trialObject(adjTrialNum); % All stimuli and their positions.
+        data(currTrial).trialStimuli = trialObject(currTrial); % All stimuli and their positions.
         data(currTrial).firstFlashedStim = stimOneFlashed;   % The first staggered stimulus presented.
         data(currTrial).secondFlashedStim = stimTwoFlashed;  % The second staggered stimulus presented.
         data(currTrial).thirdFlashedStim = stimThreeFlashed; % The third staggered stimulus presented.
@@ -2093,8 +2093,6 @@ function set_shifting(monkeysInitial)
         data(currTrial).correctToShift = numCorrectToShift;  % Number of correct trials before a shift.
         data(currTrial).numberOfShifts = shifts;             % Total number of shifts made.
         data(currTrial).trackedEye = trackedEye;             % The eye being tracked.
-        data(currTrial).colors = colors;                     % All the possible colors used.
-        data(currTrial).shapes = shapes;                     % All the possible shapes used.
         
         eval(saveCommand);
     end
@@ -2148,16 +2146,9 @@ function set_shifting(monkeysInitial)
     end
     
     function staggered_stimuli()
-        % Make sure correct stimuli object index is used.
-        if passedTrial
-            currTrialNumForObj = currTrial;
-        else
-            currTrialNumForObj = currTrialAtError;
-        end
-        
-        left = strsplit(trialObject(currTrialNumForObj).left, ';');
-        right = strsplit(trialObject(currTrialNumForObj).right, ';');
-        top = strsplit(trialObject(currTrialNumForObj).top, ';');
+        left = strsplit(trialObject(currTrial).left, ';');
+        right = strsplit(trialObject(currTrial).right, ';');
+        top = strsplit(trialObject(currTrial).top, ';');
         
         % Take the fixation dot off the screen.
         Screen('FillOval', window, colorBackground, [centerX - dotRadius + fixAdj; ...
@@ -2973,16 +2964,9 @@ function set_shifting(monkeysInitial)
         status = input(1);
         spot = input(2);
         
-        % Make sure correct stimuli object index is used.
-        if passedTrial
-            currTrialNumForObj = currTrial;
-        else
-            currTrialNumForObj = currTrialAtError;
-        end
-        
-        left = strsplit(trialObject(currTrialNumForObj).left, ';');
-        right = strsplit(trialObject(currTrialNumForObj).right, ';');
-        top = strsplit(trialObject(currTrialNumForObj).top, ';');
+        left = strsplit(trialObject(currTrial).left, ';');
+        right = strsplit(trialObject(currTrial).right, ';');
+        top = strsplit(trialObject(currTrial).top, ';');
         
         if inHoldingState
             Screen('FillOval', window, colorYellow, [centerX - dotRadius + fixAdj; ...
