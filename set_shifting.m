@@ -254,7 +254,7 @@ function set_shifting(monkeysInitial)
                    yCoord >= fixBoundYMin && yCoord <= fixBoundYMax
                     % Notify Plexon that the eye is looking at the fixation dot.
                     if recordWithPlexon
-                        toplexon(4051);
+                        toplexon(5051);
                     end
                     
                     % Determine if eye maintained fixation for given duration.
@@ -265,7 +265,7 @@ function set_shifting(monkeysInitial)
                     if checkFixBreak == false
                         % Notify Plexon that fixation on the fixation dot was acquired.
                         if recordWithPlexon
-                            toplexon(4053);
+                            toplexon(5053);
                         end
                         
                         % Fixation was obtained for desired duration.
@@ -276,7 +276,7 @@ function set_shifting(monkeysInitial)
                     else
                         % Notify Plexon that the eye looked away from the fixation dot.
                         if recordWithPlexon
-                            toplexon(4052);
+                            toplexon(5052);
                         end
                     end
                 end
@@ -370,7 +370,7 @@ function set_shifting(monkeysInitial)
                    yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
                     % Notify Plexon that the eye is looking at the left choice.
                     if recordWithPlexon
-                        toplexon(4072);
+                        toplexon(5072);
                     end
                     
                     unstaggered_stimuli('looking;left');
@@ -383,7 +383,7 @@ function set_shifting(monkeysInitial)
                     if checkFixBreak == false
                         % Notify Plexon that fixation was acquired on a choice.
                         if recordWithPlexon
-                            toplexon(4075);
+                            toplexon(5075);
                         end
                     
                         % Fixation was obtained for desired duration.
@@ -394,7 +394,7 @@ function set_shifting(monkeysInitial)
                     else
                         % Notify Plexon that fixation on previously looked at choice was lost.
                         if recordWithPlexon
-                            toplexon(4074);
+                            toplexon(5074);
                         end
                         
                         unstaggered_stimuli('none;none');
@@ -404,7 +404,7 @@ function set_shifting(monkeysInitial)
                        yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
                     % Notify Plexon that the eye is looking at the right choice.
                     if recordWithPlexon
-                        toplexon(4073);
+                        toplexon(5073);
                     end
                     
                     unstaggered_stimuli('looking;right');
@@ -417,7 +417,7 @@ function set_shifting(monkeysInitial)
                     if checkFixBreak == false
                         % Notify Plexon that fixation was acquired on a choice.
                         if recordWithPlexon
-                            toplexon(4075);
+                            toplexon(5075);
                         end
                         
                         % Fixation was obtained for desired duration.
@@ -428,7 +428,7 @@ function set_shifting(monkeysInitial)
                     else
                         % Notify Plexon that fixation on previously looked at choice was lost.
                         if recordWithPlexon
-                            toplexon(4074);
+                            toplexon(5074);
                         end
                         
                         unstaggered_stimuli('none;none');
@@ -438,7 +438,7 @@ function set_shifting(monkeysInitial)
                        yCoord >= topBoundYMin && yCoord <= topBoundYMax
                     % Notify Plexon that the eye is looking at the top choice.
                     if recordWithPlexon
-                        toplexon(4071);
+                        toplexon(5071);
                     end
                     
                     unstaggered_stimuli('looking;top');
@@ -450,7 +450,7 @@ function set_shifting(monkeysInitial)
                     if checkFixBreak == false
                         % Notify Plexon that fixation was acquired on a choice.
                         if recordWithPlexon
-                            toplexon(4075);
+                            toplexon(5075);
                         end
                         
                         % Fixation was obtained for desired duration.
@@ -461,7 +461,7 @@ function set_shifting(monkeysInitial)
                     else
                         % Notify Plexon that fixation on previously looked at choice was lost.
                         if recordWithPlexon
-                            toplexon(4074);
+                            toplexon(5074);
                         end
                         
                         unstaggered_stimuli('none;none');
@@ -1667,6 +1667,11 @@ function set_shifting(monkeysInitial)
     end
 
     function run_single_trial()
+        % Notify Plexon that a new trial is starting.
+        if recordWithPlexon
+            toplexon(4000);
+        end
+        
         currTrial = currTrial + 1;
         
         % Fixation dot appears.
@@ -1675,9 +1680,9 @@ function set_shifting(monkeysInitial)
         % Notify Plexon that all stimuli have disappeared and that the fixation dot appeared.
         if recordWithPlexon
             % All stimli gone.
-            toplexon(4015);
+            toplexon(5015);
             % Fixation dot displayed.
-            toplexon(4001);
+            toplexon(5001);
         end
         
         % Check for fixation.
@@ -1767,7 +1772,7 @@ function set_shifting(monkeysInitial)
                     
                     % Notify Plexon that all three options appeared.
                     if recordWithPlexon
-                        toplexon(4009);
+                        toplexon(5009);
                     end
                     
                     % Check for fixation.
@@ -1803,7 +1808,7 @@ function set_shifting(monkeysInitial)
                             
                             % Notify Plexon that correct feedback has been given.
                             if recordWithPlexon
-                                toplexon(4010);
+                                toplexon(5010);
                             end
                             
                             % Give reward.
@@ -1826,7 +1831,7 @@ function set_shifting(monkeysInitial)
                             
                             % Notify Plexon that incorrect feedback has been given.
                             if recordWithPlexon
-                                toplexon(4011);
+                                toplexon(5011);
                             end
                             
                             WaitSecs(feedbackTime);
@@ -1854,10 +1859,21 @@ function set_shifting(monkeysInitial)
             % Redo this trial since monkey failed to start it.
             run_single_trial;
         end
+        
+        % Notify Plexon that the trial has ended.
+        if recordWithPlexon
+            toplexon(8000);
+        end
     end
     
     % Saves trial data to a .mat file.
     function send_and_save()
+        if passedTrial
+            adjTrialNum = currTrial;
+        else
+            adjTrialNum = currTrialAtError;
+        end
+            
         if recordWithPlexon
             % Prepare data for being sent to Plexon.
             if strcmp(trialOutcome, 'correct')
@@ -1874,15 +1890,9 @@ function set_shifting(monkeysInitial)
                 selectedOption = 1;
             end
             
-            if passedTrial
-                currTrialNumForObj = currTrial;
-            else
-                currTrialNumForObj = currTrialAtError;
-            end
-
-            leftOption = trialObject(currTrialNumForObj).left;
-            rightOption = trialObject(currTrialNumForObj).right;
-            topOption = trialObject(currTrialNumForObj).top;
+            leftOption = trialObject(adjTrialNum).left;
+            rightOption = trialObject(adjTrialNum).right;
+            topOption = trialObject(adjTrialNum).top;
 
             if strcmp(topOption, 'circle;cyan')
                 topOptionCode = 11;
@@ -2002,6 +2012,18 @@ function set_shifting(monkeysInitial)
                 intertrialInterval = ITI;
             end
             
+            if stimFlashTime < 1
+                stimFlashTimeCode = stimFlashTime * 1000;
+            else
+                stimFlashTimeCode = stimFlashTime;
+            end
+            
+            if interStimulusDelay < 1
+                interStimulusDelayCode = interStimulusDelay * 1000;
+            else
+                interStimulusDelayCode = interStimulusDelay;
+            end
+            
             if strcmp(experimentType, 'intraSS')
                 experimentTypeCode = 1;
             elseif strcmp(experimentType, 'extraSS')
@@ -2017,7 +2039,7 @@ function set_shifting(monkeysInitial)
             end
             
             % Send flag to Plexon to indicate trial data is going to be sent next.
-            toplexon(3000);
+            toplexon(6000);
 
             % Send trial data to Plexon.
             toplexon(currTrial);
@@ -2036,11 +2058,16 @@ function set_shifting(monkeysInitial)
             toplexon(fixTimeMin);
             toplexon(feedbackDuration);
             toplexon(intertrialInterval);
+            toplexon(stimFlashTimeCode);
+            toplexon(interStimulusDelayCode);
             toplexon(experimentTypeCode);
             toplexon(sessionTypeCode);
             toplexon(numCorrectToShift);
             toplexon(shifts);
             toplexon(trackedEye);
+            
+            % Send flag to Plexon to indicate trial data sending has stopped.
+            toplexon(7000);
         end
         
         % Save variables to a .mat file.
@@ -2049,7 +2076,7 @@ function set_shifting(monkeysInitial)
         data(currTrial).choiceMade = chosenPosition;         % Location on screen that was chosen.
         data(currTrial).blockPercentCorr = blockPercentCorr; % Total percent correct for this block.
         data(currTrial).totalPercentCorr = totalPercentCorr; % Total percent correct for this experiment.
-        data(currTrial).trialStimuli = trialObject(currTrialNumForObj); % All stimuli and their positions.
+        data(currTrial).trialStimuli = trialObject(adjTrialNum); % All stimuli and their positions.
         data(currTrial).firstFlashedStim = stimOneFlashed;   % The first staggered stimulus presented.
         data(currTrial).secondFlashedStim = stimTwoFlashed;  % The second staggered stimulus presented.
         data(currTrial).thirdFlashedStim = stimThreeFlashed; % The third staggered stimulus presented.
@@ -2059,6 +2086,8 @@ function set_shifting(monkeysInitial)
         data(currTrial).holdFixTime = holdFixTime;           % Fixation duration to select an object.
         data(currTrial).feedbackTime = feedbackTime;         % Feedback duration.
         data(currTrial).ITI = ITI;                           % Intertrial interval.
+        data(currTrial).stimFlashTime = stimFlashTime;       % Time stimulus is flashed during initial stimuli presentation.
+        data(currTrial).interStimDelay = interStimulusDelay; % Time between stimulus flashes during initial stimuli presentation.
         data(currTrial).experimentType = experimentType;     % What version of the task this session was.
         data(currTrial).sessionType = sessionType;           % Whether this was staggered or unstaggered.
         data(currTrial).correctToShift = numCorrectToShift;  % Number of correct trials before a shift.
@@ -2139,7 +2168,7 @@ function set_shifting(monkeysInitial)
         
         % Notify Plexon that the fixation dot disappeared.
         if recordWithPlexon
-            toplexon(4002);
+            toplexon(5002);
         end
         
         % Make sure stimuli are presented in same order if prev trial failed.
@@ -2178,11 +2207,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
                     
@@ -2198,11 +2227,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2213,11 +2242,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2225,15 +2254,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide circle.
                     draw_circle('left', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2255,11 +2285,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
                     
@@ -2275,11 +2305,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2290,11 +2320,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2302,15 +2332,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide star.
                     draw_star('left', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2332,11 +2363,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
 
@@ -2352,11 +2383,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2367,11 +2398,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2379,15 +2410,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide triangle.
                     draw_triangle('left', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2409,11 +2441,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
                     
@@ -2429,11 +2461,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2444,11 +2476,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2456,15 +2488,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide circle.
                     draw_circle('right', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2486,11 +2519,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
 
@@ -2506,11 +2539,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2521,11 +2554,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2533,15 +2566,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide star.
                     draw_star('right', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2563,11 +2597,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
                     
@@ -2583,11 +2617,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2598,11 +2632,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2610,15 +2644,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide triangle.
                     draw_triangle('right', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2640,11 +2675,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
                     
@@ -2660,11 +2695,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2675,11 +2710,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2687,15 +2722,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide circle.
                     draw_circle('top', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2717,11 +2753,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
                     
@@ -2737,11 +2773,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2752,11 +2788,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2764,15 +2800,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide star.
                     draw_star('top', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
@@ -2794,11 +2831,11 @@ function set_shifting(monkeysInitial)
                     % Notify Plexon that an option appeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4003);
+                            toplexon(5003);
                         elseif index == 2
-                            toplexon(4005);
+                            toplexon(5005);
                         elseif index == 3
-                            toplexon(4007);
+                            toplexon(5007);
                         end
                     end
 
@@ -2814,11 +2851,11 @@ function set_shifting(monkeysInitial)
                             if enteredSpot == 0
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(4061);
+                                        toplexon(5061);
                                     elseif index == 2
-                                        toplexon(4063);
+                                        toplexon(5063);
                                     elseif index == 3
-                                        toplexon(4065);
+                                        toplexon(5065);
                                     end
                                     
                                     enteredSpot = 1;
@@ -2829,11 +2866,11 @@ function set_shifting(monkeysInitial)
                             
                             if recordWithPlexon
                                 if index == 1
-                                    toplexon(4062);
+                                    toplexon(5062);
                                 elseif index == 2
-                                    toplexon(4064);
+                                    toplexon(5064);
                                 elseif index == 3
-                                    toplexon(4066);
+                                    toplexon(5066);
                                 end
                             end
                         end
@@ -2841,15 +2878,16 @@ function set_shifting(monkeysInitial)
                     
                     % Hide triangle.
                     draw_triangle('top', 'solid', colorBackground, 'none');
+                    Screen('Flip', window);
                     
                     % Notify Plexon that an option disappeared.
                     if recordWithPlexon
                         if index == 1
-                            toplexon(4004);
+                            toplexon(5004);
                         elseif index == 2
-                            toplexon(4006);
+                            toplexon(5006);
                         elseif index == 3
-                            toplexon(4008);
+                            toplexon(5008);
                         end
                     end
                 end
