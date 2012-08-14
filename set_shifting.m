@@ -32,14 +32,14 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 10;            % Number correct trials before shift.
+      numCorrectToShift   = 20;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
       stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
                                            %         staggered stimuli session.
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
-      trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
+      trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       recordWithPlexon    = 1;             % Values: 0 or 1. Sends events and data
                                            %         to Plexon when set to 1.
@@ -231,6 +231,17 @@ function set_shifting(monkeysInitial)
         % Check for pausing or quitting during ITI.
         startingTime = GetSecs;
         while ITI > (GetSecs - startingTime)
+            key = key_check;
+            
+            % Pause experiment.
+            if key.pause == 1
+                pause(key);
+            end
+            
+            % Exit experiment.
+            if key.escape == 1
+                running = false;
+            end
         end
     end
     
@@ -1554,16 +1565,25 @@ function set_shifting(monkeysInitial)
     function key = key_check()
         % Assign key codes to some variables.
         stopKey = KbName('ESCAPE');
+        pauseKey = KbName('RightControl');
         
-        % Make sure default values of key are false.
-        key.escape = false;
+        % Make sure default values of key are zero.
+        key.pressed = 0;
+        key.escape = 0;
+        key.pause = 0;
         
         % Get info about any key that was just pressed.
-        [~, ~, keyCode] = KbCheck;
+        [keyIsDown, secs, keyCode] = KbCheck;
         
         % Check pressed key against the keyCode array of 256 key codes.
         if keyCode(stopKey)
-            key.escape = true;
+            key.escape = 1;
+            key.pressed = 1;
+        end
+        
+        if keyCode(pauseKey)
+            key.pause = 1;
+            key.pressed = 1;
         end
     end
     
@@ -1573,6 +1593,36 @@ function set_shifting(monkeysInitial)
         if keyRef.escape == true
             running = false;
         end
+    end
+    
+    function k = pause(k)
+        disp('             ');
+        disp('\\\\\\\\\\\\\\\\\\\\\\\\\\\\          /////////////////////////////');
+        disp(' \\\\\\\\\\\\\\\\\\\\\\\\\\\\ PAUSED /////////////////////////////');
+        disp('  |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||');
+        
+        while k.pressed == 1
+            k = key_check;
+        end
+        
+        pause = 1;
+        while pause == 1 && k.escape ~= 1
+            k = key_check;
+            
+            if k.pause == 1
+                pause = 0;
+            end
+        end
+        
+        while k.pressed == 1
+            k = key_check;
+        end
+        
+        disp('             ');
+        disp('  ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||');
+        disp(' /////////////////////////// UNPAUSED \\\\\\\\\\\\\\\\\\\\\\\\\\\');
+        disp('///////////////////////////            \\\\\\\\\\\\\\\\\\\\\\\\\\\');
+        disp('             ');
     end
     
     % Makes a folder and file where data will be saved.
