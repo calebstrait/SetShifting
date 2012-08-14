@@ -224,8 +224,6 @@ function set_shifting(monkeysInitial)
         
         run_single_trial;
         
-        trialCount = trialCount + 1;
-        currBlockTrial = currBlockTrial + 1;
         inHoldingState = true;
         
         print_stats();
@@ -1614,9 +1612,7 @@ function set_shifting(monkeysInitial)
     
     % Prints current trial stats.
     function print_stats()
-        % Calculate percentage correct values and convert them to strings.
-        blockPercentCorr     = round((numCorrTrials / currBlockTrial) * 100);
-        totalPercentCorr     = round((totalNumCorrTrials / trialCount) * 100);
+        % Convert percentages to strings.
         blockPercentCorrStr  = strcat(num2str(blockPercentCorr), '%');
         totalPercentCorrStr  = strcat(num2str(totalPercentCorr), '%');
         currBlockTrialStr    = num2str(currBlockTrial);
@@ -1679,8 +1675,11 @@ function set_shifting(monkeysInitial)
         
         % Notify Plexon that all stimuli have disappeared and that the fixation dot appeared.
         if recordWithPlexon
-            % All stimli gone.
-            toplexon(5012);
+            if ~(currTrial == 1)
+                % All stimli gone.
+                toplexon(5012);
+            end
+            
             % Fixation dot displayed.
             toplexon(5001);
         end
@@ -1828,6 +1827,12 @@ function set_shifting(monkeysInitial)
                             rewarded = 'yes';
                             totalNumCorrTrials = totalNumCorrTrials + 1;
                             trialOutcome = 'correct';
+                            trialCount = trialCount + 1;
+                            currBlockTrial = currBlockTrial + 1;
+                            
+                            % Calculate percentages.
+                            blockPercentCorr = round((numCorrTrials / currBlockTrial) * 100);
+                            totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
                             
                             % Save trial data.
                             send_and_save;
@@ -1852,6 +1857,12 @@ function set_shifting(monkeysInitial)
                             passedTrial = false;
                             rewarded = 'no';
                             trialOutcome = 'incorrect';
+                            trialCount = trialCount + 1;
+                            currBlockTrial = currBlockTrial + 1;
+                            
+                            % Calculate percentages.
+                            blockPercentCorr = round((numCorrTrials / currBlockTrial) * 100);
+                            totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
                             
                             % Save trial data.
                             send_and_save;
