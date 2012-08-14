@@ -32,7 +32,7 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 10;             % Number correct trials before shift.
+      numCorrectToShift   = 10;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
       stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
@@ -143,7 +143,7 @@ function set_shifting(monkeysInitial)
     % Times.
     feedbackTime       = 0.4;     % Duration of the error state.
     chooseHoldFixTime  = 0.2;     % Duration fixation must be held while targets are on.
-    holdFixTime        = 0.75;     % Duration to hold fixation before choosing.
+    holdFixTime        = 0.75;    % Duration to hold fixation before choosing.
     ITI                = 0.8;     % Intertrial interval.
     minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
     timeToFix          = intmax;  % Amount of time monkey is given to fixate.
@@ -227,7 +227,11 @@ function set_shifting(monkeysInitial)
         inHoldingState = true;
         
         print_stats();
-        WaitSecs(ITI);
+        
+        % Check for pausing or quitting during ITI.
+        startingTime = GetSecs;
+        while ITI > (GetSecs - startingTime)
+        end
     end
     
     Screen('CloseAll');
@@ -1673,14 +1677,8 @@ function set_shifting(monkeysInitial)
         % Fixation dot appears.
         draw_fixation_point(colorYellow);
         
-        % Notify Plexon that all stimuli have disappeared and that the fixation dot appeared.
+        % Notify Plexon that the fixation dot appeared.
         if recordWithPlexon
-            if ~(currTrial == 1)
-                % All stimli gone.
-                toplexon(5012);
-            end
-            
-            % Fixation dot displayed.
             toplexon(5001);
         end
         
@@ -1820,6 +1818,16 @@ function set_shifting(monkeysInitial)
                             reward(rewardDuration);
                             WaitSecs(feedbackTime);
                             
+                            % Clear screen.
+                            Screen('FillRect', window, colorBackground, ...
+                                   [0 0 (centerX * 2) (centerY * 2)]);
+                            Screen('Flip', window);
+                            
+                            % Notify Plexon that all stimuli are gone.
+                            if recordWithPlexon
+                                toplexon(5012);
+                            end
+                            
                             % Update.
                             chosenPosition = area;
                             numCorrTrials = numCorrTrials + 1;
@@ -1846,6 +1854,16 @@ function set_shifting(monkeysInitial)
                             end
                             
                             WaitSecs(feedbackTime);
+                            
+                            % Clear screen.
+                            Screen('FillRect', window, colorBackground, ...
+                                   [0 0 (centerX * 2) (centerY * 2)]);
+                            Screen('Flip', window);
+                            
+                            % Notify Plexon that all stimuli are gone.
+                            if recordWithPlexon
+                                toplexon(5012);
+                            end
                             
                             % Only reset error trial tracker if this is the first error in a row.
                             if passedTrial
