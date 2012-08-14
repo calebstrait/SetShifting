@@ -39,7 +39,7 @@ function set_shifting(monkeysInitial)
                                            %         staggered stimuli session.
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
-      trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
+      trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       recordWithPlexon    = 1;             % Values: 0 or 1. Sends events and data
                                            %         to Plexon when set to 1.
@@ -153,6 +153,7 @@ function set_shifting(monkeysInitial)
     colors             = [{'cyan'}, {'magenta'}, {'yellow'}];
     corrAnsObject      = struct([]);
     currentAnswer      = '';
+    currAnsPosition    = 0;
     currBlockTrial     = 0;
     currTrial          = 0;
     currTrialAtError   = 1;
@@ -1854,6 +1855,7 @@ function set_shifting(monkeysInitial)
                         end
                         
                         correctSpot = corrAnsObject(currTrialNumForObj).correct;
+                        currAnsPosition = correctSpot;
                         
                         if strcmp(area, correctSpot)
                             % Display feedback stimuli.
@@ -1953,6 +1955,17 @@ function set_shifting(monkeysInitial)
     
     % Saves trial data to a .mat file.
     function send_and_save()
+        % Convert correct answer position into a code.
+        if strcmp(currAnsPosition, 'left')
+            corrPosCode = 2;
+        elseif strcmp(currAnsPosition, 'right')
+            corrPosCode = 3;
+        elseif strcmp(currAnsPosition, 'top')
+            corrPosCode = 1;
+        end
+        
+        disp(corrPosCode);
+        
         if recordWithPlexon
             % Prepare data for being sent to Plexon.
             if strcmp(trialOutcome, 'correct')
@@ -2124,6 +2137,7 @@ function set_shifting(monkeysInitial)
             toplexon(currTrial);
             toplexon(correctStatus);
             toplexon(selectedOption);
+            toplexon(corrPosCode);
             toplexon(blockPercentCorr);
             toplexon(totalPercentCorr);
             toplexon(topOptionCode);
@@ -2153,6 +2167,7 @@ function set_shifting(monkeysInitial)
         data(currTrial).trial = currTrial;                   % The trial number for this trial.
         data(currTrial).trialOutcome = trialOutcome;         % Whether the choice was correct or not.
         data(currTrial).choiceMade = chosenPosition;         % Location on screen that was chosen.
+        data(currTrial).corrAnsPos = corrPosCode;            % The position of the correct answer.
         data(currTrial).blockPercentCorr = blockPercentCorr; % Total percent correct for this block.
         data(currTrial).totalPercentCorr = totalPercentCorr; % Total percent correct for this experiment.
         data(currTrial).trialStimuli = trialObject(currTrial); % All stimuli and their positions.

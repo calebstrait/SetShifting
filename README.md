@@ -53,6 +53,10 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 	+ 1 = top
 	+ 2 = left
 	+ 3 = right
++ location of the correct position
+	+ 1 = top
+	+ 2 = left
+	+ 3 = right
 + block percent correct (whole percentage)
 + total percent correct (whole percentage)
 + trial stimulus in top position
