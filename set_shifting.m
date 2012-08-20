@@ -1865,13 +1865,14 @@ function set_shifting(monkeysInitial)
                             % Display feedback stimuli.
                             unstaggered_stimuli(strcat('correct', ';', area));
                             
+                            % Give reward.
+                            reward(rewardDuration);
+                            
                             % Notify Plexon that correct feedback has been given.
                             if recordWithPlexon
                                 toplexon(5010);
                             end
                             
-                            % Give reward.
-                            reward(rewardDuration);
                             WaitSecs(feedbackTime);
                             
                             % Clear screen.
