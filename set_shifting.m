@@ -39,7 +39,7 @@ function set_shifting(monkeysInitial)
                                            %         staggered stimuli session.
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
-      trackedEye          = 2;             % Values: 1 (left eye), 2 (right eye).
+      trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       recordWithPlexon    = 1;             % Values: 0 or 1. Sends events and data
                                            %         to Plexon when set to 1.
@@ -142,7 +142,7 @@ function set_shifting(monkeysInitial)
     
     % Times.
     feedbackTime       = 0.4;     % Duration of the error state.
-    chooseHoldFixTime  = 0.2;     % Duration fixation must be held while targets are on.
+    chooseHoldFixTime  = 0.1;     % Duration fixation must be held while targets are on.
     holdFixTime        = 0.75;    % Duration to hold fixation before choosing.
     ITI                = 0.8;     % Intertrial interval.
     minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
@@ -153,8 +153,10 @@ function set_shifting(monkeysInitial)
     colors             = [{'cyan'}, {'magenta'}, {'yellow'}];
     corrAnsObject      = struct([]);
     currentAnswer      = '';
+    currentDim         = '';
     currAnsPosition    = 0;
     currBlockTrial     = 0;
+    currIntBlockTrial  = 0;
     currTrial          = 0;
     currTrialAtError   = 1;
     dimension          = [{'color'}, {'shape'}];
@@ -1724,6 +1726,7 @@ function set_shifting(monkeysInitial)
         end
         
         currTrial = currTrial + 1;
+        currInterBlockTrial = currInterBlockTrial + 1;
         
         % Fixation dot appears.
         draw_fixation_point(colorYellow);
@@ -1742,7 +1745,7 @@ function set_shifting(monkeysInitial)
                 corrAnsObject = generate_correct_answer;
             end
             
-            % Genererate correct trial answer for intraSS task.
+            % Genererate correct trial answer.
             if (strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')) && ...
                 trialCount ~= 0 && numCorrTrials ~= numCorrectToShift && passedTrial
                 corrAnsObject = generate_correct_answer;
@@ -1754,6 +1757,7 @@ function set_shifting(monkeysInitial)
                 currBlockTrial = 0;
                 numCorrTrials = 0;
                 shifts = shifts + 1;
+                currIntBlockTrial = 1;
                 
                 % Increment a shift counter.
                 if strcmp(experimentType, 'colorShift')
@@ -1882,6 +1886,7 @@ function set_shifting(monkeysInitial)
                             
                             % Update.
                             chosenPosition = area;
+                            currentDim = char(corrAnsObject(currTrialNumForObj).dimension);
                             numCorrTrials = numCorrTrials + 1;
                             passedTrial = true;
                             rewarded = 'yes';
@@ -1924,6 +1929,7 @@ function set_shifting(monkeysInitial)
                             
                             % Update.
                             chosenPosition = area;
+                            currentDim = char(corrAnsObject(currTrialNumForObj).dimension);
                             passedTrial = false;
                             rewarded = 'no';
                             trialOutcome = 'incorrect';
@@ -1964,7 +1970,12 @@ function set_shifting(monkeysInitial)
             corrPosCode = 1;
         end
         
-        disp(corrPosCode);
+        % Convert current dimension into a code.
+        if strcmp(currentDim, 'color')
+            currentDimCode = 1;
+        elseif strcmp(currentDim, 'shape')
+            currentDimCode = 2;
+        end
         
         if recordWithPlexon
             % Prepare data for being sent to Plexon.
@@ -2076,6 +2087,7 @@ function set_shifting(monkeysInitial)
                 rewardedCode = 0;
             end
             
+            %{
             if timeToFix == intmax
                 maxFixTime = 15000;
             else
@@ -2115,6 +2127,7 @@ function set_shifting(monkeysInitial)
             else
                 interStimulusDelayCode = interStimulusDelay;
             end
+            %}
             
             if strcmp(experimentType, 'intraSS')
                 experimentTypeCode = 1;
@@ -2124,17 +2137,20 @@ function set_shifting(monkeysInitial)
                 experimentTypeCode = 3;
             end
             
+            %{
             if strcmp(sessionType, 'unstaggered')
                 sessionTypeCode = 1;
             elseif strcmp(sessionType, 'staggered')
                 sessionTypeCode = 2;
             end
+            %}
             
             % Send flag to Plexon to indicate trial data is going to be sent next.
             toplexon(6000);
 
             % Send trial data to Plexon.
             toplexon(currTrial);
+            toplexon(currIntBlockTrial);
             toplexon(correctStatus);
             toplexon(selectedOption);
             toplexon(corrPosCode);
@@ -2147,17 +2163,9 @@ function set_shifting(monkeysInitial)
             toplexon(flashedSecond);
             toplexon(flashedThird);
             toplexon(rewardedCode);
-            toplexon(maxFixTime);
-            toplexon(fixTimeMin);
-            toplexon(feedbackDuration);
-            toplexon(intertrialInterval);
-            toplexon(stimFlashTimeCode);
-            toplexon(interStimulusDelayCode);
             toplexon(experimentTypeCode);
-            toplexon(sessionTypeCode);
+            toplexon(currentDimCode);
             toplexon(numCorrectToShift);
-            toplexon(shifts);
-            toplexon(trackedEye);
             
             % Send flag to Plexon to indicate trial data sending has stopped.
             toplexon(7000);
@@ -2165,6 +2173,7 @@ function set_shifting(monkeysInitial)
         
         % Save variables to a .mat file.
         data(currTrial).trial = currTrial;                   % The trial number for this trial.
+        data(currTrial).currBlockTrial = currIntBlockTrial;  % Current trial number within a block.
         data(currTrial).trialOutcome = trialOutcome;         % Whether the choice was correct or not.
         data(currTrial).choiceMade = chosenPosition;         % Location on screen that was chosen.
         data(currTrial).corrAnsPos = corrPosCode;            % The position of the correct answer.
@@ -2183,6 +2192,7 @@ function set_shifting(monkeysInitial)
         data(currTrial).stimFlashTime = stimFlashTime;       % Time stimulus is flashed during initial stimuli presentation.
         data(currTrial).interStimDelay = interStimulusDelay; % Time between stimulus flashes during initial stimuli presentation.
         data(currTrial).experimentType = experimentType;     % What version of the task this session was.
+        data(currTrial).currentRuleType = currentDim;        % What the current rule is: color or shape.
         data(currTrial).sessionType = sessionType;           % Whether this was staggered or unstaggered.
         data(currTrial).correctToShift = numCorrectToShift;  % Number of correct trials before a shift.
         data(currTrial).numberOfShifts = shifts;             % Total number of shifts made.

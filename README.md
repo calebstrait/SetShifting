@@ -45,7 +45,8 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 
 ## Trial data sent to Plexon
 
-+ trial number             
++ trial number        
++ current trial within the current block     
 + trial outcome
 	+ 0 = incorrect
 	+ 1 = correct
@@ -87,22 +88,12 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 	+ 3 = right
 + rewarded or not
 	+ 0 = not rewarded
-	+ 1 = was rewarded			
-+ time allowed to fixate on fixation dot (sends over 15000 if this value is intmax; otherwise it sends the actual value, which is multiplied by 1000 if the value is less than 1)
-+ minimum fixation time on fixation dot to initiate trial (multiplied by 1000 if the value is less than 1)		
-+ duration that feedback is displayed (multiplied by 1000 if the value is less than 1)		
-+ ITI (multiplied by 1000 if the value is less than 1)		
-+ time stimulus is flashed during initial stimuli presentation (multiplied by 1000 if the value is less than 1)	
-+ time between stimulus flashes during initial stimuli presentation (multiplied by 1000 if the value is less than 1)		
+	+ 1 = was rewarded				
 + experiment type
 	+ 1 = intra-dimensional
 	+ 2 = extra-dimensional
 	+ 3 = reversal
-+ session type
-	+ 1 = unstaggered
-	+ 2 = staggered
++ current rule type		
+	+ 1 = color	
+	+ 2 = shape	
 + correct choices until shift occurs
-+ total number of shifts that occurred during the session
-+ which eye was tracked
-	+ 1 = left
-	+ 2 = right
