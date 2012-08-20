@@ -1726,7 +1726,7 @@ function set_shifting(monkeysInitial)
         end
         
         currTrial = currTrial + 1;
-        currInterBlockTrial = currInterBlockTrial + 1;
+        currIntBlockTrial = currIntBlockTrial + 1;
         
         % Fixation dot appears.
         draw_fixation_point(colorYellow);
