@@ -221,10 +221,6 @@ function set_shifting(monkeysInitial)
     
     running = true;
     while running
-        % Listen for key presses.
-        keyPress = key_check;
-        key_execute(keyPress);
-        
         run_single_trial;
         
         inHoldingState = true;
@@ -528,7 +524,8 @@ function set_shifting(monkeysInitial)
             disp('Called draw_circle with an illegal value for the "type" parameter');
         end
     end
-
+    
+    % Draws a thin line on top of the invisible fixation boundaries.
     function draw_fixation_bounds()
         Screen('FrameRect', window, colorYellow, [fixBoundXMin fixBoundYMin ...
                                                   fixBoundXMax fixBoundYMax], 1);
@@ -1587,14 +1584,6 @@ function set_shifting(monkeysInitial)
         if keyCode(pauseKey)
             key.pause = 1;
             key.pressed = 1;
-        end
-    end
-    
-    % Execute a passsed key command.
-    function key_execute(keyRef)
-        % Stop task at end of current trial.
-        if keyRef.escape == true
-            running = false;
         end
     end
     
