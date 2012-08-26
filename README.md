@@ -22,9 +22,10 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 + 5007 - third option appears	
 + 5008 - third option disappears
 + 5009 - all options appear AND second fixation dot appears (NOTE: It never really disappeared)
-+ 5010 - option correct feedback given AND reward is given
++ 5010 - option correct feedback given
 + 5011 - option incorrect feedback given
 + 5012 - all options disappear
++ 5013 - reward given
 
 ## Eye movement events sent to Plexon
 

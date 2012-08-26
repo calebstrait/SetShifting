@@ -93,7 +93,7 @@ function set_shifting(monkeysInitial)
     fixAdjLROutside = 175;  % Amount to stretch out L & R option outside sides from original.
     fixAdjLRTop     = 40;   % Amount to stretch up L & R option fix bounds from original.
     fixAdjTTopSide  = 50;   % Amount to stretch up top option fix bounds from original.
-    fixAdjTOutside  = 118; %415;  % Amount to stretch out top option outside sides from original.
+    fixAdjTOutside  = 118;  % Amount to stretch out top option outside sides from original.
     
     % Values to calculate fixation boxes.
     fixBoundXMax    = centerX + hfWidth;
@@ -146,6 +146,7 @@ function set_shifting(monkeysInitial)
     holdFixTime        = 0.75;    % Duration to hold fixation before choosing.
     ITI                = 0.8;     % Intertrial interval.
     minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
+    rewardDelay        = 0.5;     % Delay between end of correct feedback and reward.
     timeToFix          = intmax;  % Amount of time monkey is given to fixate.
     
     % Trial.
@@ -454,6 +455,7 @@ function set_shifting(monkeysInitial)
                     end
                     
                     unstaggered_stimuli('looking;top');
+                    
                     % Determine if eye maintained fixation for given duration.
                     checkFixBreak = fix_break_check(topBoundXMin, topBoundXMax, ...
                                                     topBoundYMin, topBoundYMax, ...
@@ -511,9 +513,9 @@ function set_shifting(monkeysInitial)
         elseif strcmp(type, 'outline')
             % Draw a filled circle.
             Screen('FillOval', window, colorFill, [circleCenterX - hfWidth + circleAdj; ...
-                                                  circleCenterY - hfWidth; ...
-                                                  circleCenterX + hfWidth - circleAdj; ...
-                                                  circleCenterY + hfWidth]);
+                                                   circleCenterY - hfWidth; ...
+                                                   circleCenterX + hfWidth - circleAdj; ...
+                                                   circleCenterY + hfWidth]);
             % Draw a circle outline.
             Screen('FrameOval', window, colorOut, [circleCenterX - hfWidth + circleAdj; ...
                                                    circleCenterY - hfWidth; ...
@@ -653,13 +655,13 @@ function set_shifting(monkeysInitial)
                 % Randomly choose correct color if it's the first trial.
                 if trialCount == 0
                     % Choose a color randomly from the total color pool w/o replacement.
-                    randValIndex1 = rand_int(2);
+                    randValIndex1 = rand_int(3);
                     color1 = char(colors(randValIndex1));
                     % Delete the color just picked from the pool.
                     colors(randValIndex1) = [];
 
                     % Choose another color randomly from the pool w/o replacement.
-                    randValIndex2 = rand_int(1);
+                    randValIndex2 = rand_int(2);
                     color2 = char(colors(randValIndex2));
                     colors(randValIndex2) = [];
                     
@@ -668,7 +670,7 @@ function set_shifting(monkeysInitial)
 
                     % Choose random shape if this is the first trial.
                     if trialCount == 0
-                        randValIndex3 = rand_int(2);
+                        randValIndex3 = rand_int(3);
                         shape = char(shapes(randValIndex3));
                     else
                         shape = chosenShape;
@@ -700,7 +702,7 @@ function set_shifting(monkeysInitial)
                     end
                     
                     % Choose a color randomly from the small color pool.
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     color1 = char(tempColorArray(randIndex));
                     tempColorArray(randIndex) = [];
                     
@@ -742,13 +744,13 @@ function set_shifting(monkeysInitial)
                 % Randomly choose correct shape if it's the first trial.
                 if trialCount == 0
                     % Choose a shape randomly from the total shape pool w/o replacement.
-                    randValIndex1 = rand_int(2);
+                    randValIndex1 = rand_int(3);
                     shape1 = char(shapes(randValIndex1));
                     % Delete the shape just picked from the pool.
                     shapes(randValIndex1) = [];
 
                     % Choose another color randomly from the pool w/o replacement.
-                    randValIndex2 = rand_int(1);
+                    randValIndex2 = rand_int(2);
                     shape2 = char(shapes(randValIndex2));
                     shapes(randValIndex2) = [];
                     
@@ -757,7 +759,7 @@ function set_shifting(monkeysInitial)
 
                     % Choose random color if this is the first trial.
                     if trialCount == 0
-                        randValIndex3 = rand_int(2);
+                        randValIndex3 = rand_int(3);
                         color = char(colors(randValIndex3));
                     else
                         color = chosenColor;
@@ -789,7 +791,7 @@ function set_shifting(monkeysInitial)
                     end
                     
                     % Choose a shape randomly from the small shape pool.
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     shape1 = char(tempShapeArray(randIndex));
                     tempShapeArray(randIndex) = [];
                     
@@ -830,13 +832,13 @@ function set_shifting(monkeysInitial)
             % Generate random correct stimulus if it's the first trial.
             if trialCount == 0
                 % Choose a color randomly from the total color pool w/o replacement.
-                randValIndex1 = rand_int(2);
+                randValIndex1 = rand_int(3);
                 color1 = char(colors(randValIndex1));
                 % Delete the color just picked from the pool.
                 colors(randValIndex1) = [];
 
                 % Choose another color randomly from the pool w/o replacement.
-                randValIndex2 = rand_int(1);
+                randValIndex2 = rand_int(2);
                 color2 = char(colors(randValIndex2));
                 colors(randValIndex2) = [];
 
@@ -844,13 +846,13 @@ function set_shifting(monkeysInitial)
                 color3 = char(colors(1));
 
                 % Choose a shape randomly from the total shape pool w/o replacement.
-                randValIndex1 = rand_int(2);
+                randValIndex1 = rand_int(3);
                 shape1 = char(shapes(randValIndex1));
                 % Delete the shape just picked from the pool.
                 shapes(randValIndex1) = [];
 
                 % Choose another color randomly from the pool w/o replacement.
-                randValIndex2 = rand_int(1);
+                randValIndex2 = rand_int(2);
                 shape2 = char(shapes(randValIndex2));
                 shapes(randValIndex2) = [];
 
@@ -867,7 +869,7 @@ function set_shifting(monkeysInitial)
                 
                 % Set a random dimension to use for this entire session if requested.
                 if strcmp(sessionDimension, 'random') || strcmp(allRandom, 'yes')
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     sessionDimension = char(dimension(randIndex));
                 end
                 
@@ -911,7 +913,7 @@ function set_shifting(monkeysInitial)
                     end
 
                     % Choose a color randomly from the small color pool.
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     color1 = char(tempColorArray(randIndex));
                     tempColorArray(randIndex) = [];
 
@@ -920,7 +922,7 @@ function set_shifting(monkeysInitial)
                     color3 = lastColor;
 
                     % Choose a shape randomly from the small shape pool.
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     shape1 = char(tempShapeArray(randIndex));
                     tempShapeArray(randIndex) = [];
 
@@ -930,13 +932,13 @@ function set_shifting(monkeysInitial)
                 % Stimuli choices for a random stimuli experiment.
                 else
                     % Choose a color randomly from the total color pool w/o replacement.
-                    randValIndex1 = rand_int(2);
+                    randValIndex1 = rand_int(3);
                     color1 = char(colors(randValIndex1));
                     % Delete the color just picked from the pool.
                     colors(randValIndex1) = [];
 
                     % Choose another color randomly from the pool w/o replacement.
-                    randValIndex2 = rand_int(1);
+                    randValIndex2 = rand_int(2);
                     color2 = char(colors(randValIndex2));
                     colors(randValIndex2) = [];
 
@@ -944,13 +946,13 @@ function set_shifting(monkeysInitial)
                     color3 = char(colors(1));
 
                     % Choose a shape randomly from the total shape pool w/o replacement.
-                    randValIndex1 = rand_int(2);
+                    randValIndex1 = rand_int(3);
                     shape1 = char(shapes(randValIndex1));
                     % Delete the shape just picked from the pool.
                     shapes(randValIndex1) = [];
 
                     % Choose another color randomly from the pool w/o replacement.
-                    randValIndex2 = rand_int(1);
+                    randValIndex2 = rand_int(2);
                     shape2 = char(shapes(randValIndex2));
                     shapes(randValIndex2) = [];
 
@@ -998,7 +1000,7 @@ function set_shifting(monkeysInitial)
                             trialValue = shapeOne;
                         end
                     else
-                        randIndex = rand_int(1);
+                        randIndex = rand_int(2);
                         sessionDimension = char(dimension(randIndex));
                         
                         if strcmp(sessionDimension, 'color')
@@ -1045,7 +1047,7 @@ function set_shifting(monkeysInitial)
                 if strcmp(sessionDimension, 'color')
                     % Choose a color randomly from the small color pool.
                     color1 = colorOne;
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     color2 = char(tempColorArray(randIndex));
                     tempColorArray(randIndex) = [];
 
@@ -1055,7 +1057,7 @@ function set_shifting(monkeysInitial)
                     % Don't repeat the last value if the randomness setting is off.
                     if strcmp(allRandom, 'no')
                         % Choose a shape randomly from the small shape pool.
-                        randIndex = rand_int(1);
+                        randIndex = rand_int(2);
                         shape1 = char(tempShapeArray(randIndex));
                         tempShapeArray(randIndex) = [];
                         
@@ -1065,12 +1067,12 @@ function set_shifting(monkeysInitial)
                     % Pick shapes randomly from all possible shapes.
                     else
                         % Choose a shape randomly from all possible values.
-                        randIndex1 = rand_int(2);
+                        randIndex1 = rand_int(3);
                         shape1 = char(shapes(randIndex1));
                         shapes(randIndex1) = [];
                         
                         % Select the remaining shapes randomly.
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         shape2 = char(shapes(randIndex2));
                         shapes(randIndex2) = [];
                         shape3 = char(shapes(1));
@@ -1079,7 +1081,7 @@ function set_shifting(monkeysInitial)
                 else
                     % Choose a shape randomly from the small color pool.
                     shape1 = shapeOne;
-                    randIndex = rand_int(1);
+                    randIndex = rand_int(2);
                     shape2 = char(tempShapeArray(randIndex));
                     tempShapeArray(randIndex) = [];
 
@@ -1089,7 +1091,7 @@ function set_shifting(monkeysInitial)
                     % Don't repeat the last value if the randomness setting is off.
                     if strcmp(allRandom, 'no')
                         % Choose a color randomly from the small shape pool.
-                        randIndex = rand_int(1);
+                        randIndex = rand_int(2);
                         color1 = char(tempColorArray(randIndex));
                         tempColorArray(randIndex) = [];
 
@@ -1099,12 +1101,12 @@ function set_shifting(monkeysInitial)
                     % Pick colors randomly from all possible colors.
                     else
                         % Choose a color randomly from all possible values.
-                        randIndex1 = rand_int(2);
+                        randIndex1 = rand_int(3);
                         color1 = char(colors(randIndex1));
                         colors(randIndex1) = [];
                         
                         % Select the remaining shapes randomly.
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         color2 = char(colors(randIndex2));
                         colors(randIndex2) = [];
                         color3 = char(colors(1));
@@ -1161,8 +1163,8 @@ function set_shifting(monkeysInitial)
             % Just generate a random location for the correct choice.
             if currTrial == 1 || strcmp(allRandom, 'yes')
                 % Randomly select positions for each stimulus.
-                randIndex1 = rand_int(2);
-                randIndex2 = rand_int(1);
+                randIndex1 = rand_int(3);
+                randIndex2 = rand_int(2);
                 correctPos = char(positions(randIndex1));
                 positions(randIndex1) = [];
                 otherPos1 = char(positions(randIndex2));
@@ -1216,7 +1218,7 @@ function set_shifting(monkeysInitial)
                 end
                 
                 % Randomly select positions for each stimulus.
-                randIndex = rand_int(1);
+                randIndex = rand_int(2);
                 correctPos = char(tempPosArray(randIndex));
                 tempPosArray(randIndex) = [];
                 otherPos1 = char(tempPosArray(1));
@@ -1271,12 +1273,12 @@ function set_shifting(monkeysInitial)
                 end
                 
                 % Find left stimulus value.
-                randIndex1 = rand_int(2);
+                randIndex1 = rand_int(3);
                 leftValSub = char(tempColors(randIndex1));
                 tempColors(randIndex1) = [];
 
                 % Find right stimulus value.
-                randIndex2 = rand_int(1);
+                randIndex2 = rand_int(2);
                 rightValSub = char(tempColors(randIndex2));
                 tempColors(randIndex2) = [];
                 
@@ -1322,12 +1324,12 @@ function set_shifting(monkeysInitial)
                 % Choose new correct position from 2 that it wasn't last time.
                 if strcmp(lastCorrPos, 'left')
                     tempArray = [{'right'}, {'top'}];
-                    randIndex1 = rand_int(1);
+                    randIndex1 = rand_int(2);
                     newCorrPosition = char(tempArray(randIndex1));
                     
                     if strcmp(newCorrPosition, 'right')
                         rightSubVal = colorOne;
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         leftSubVal = char(tempColors(randIndex2));
                         tempColors(randIndex2) = [];
                         topSubVal = char(tempColors(1));
@@ -1335,7 +1337,7 @@ function set_shifting(monkeysInitial)
                         correctSpot = 'right';
                     else
                         topSubVal = colorOne;
-                        randIndex3 = rand_int(1);
+                        randIndex3 = rand_int(2);
                         leftSubVal = char(tempColors(randIndex3));
                         tempColors(randIndex3) = [];
                         rightSubVal = char(tempColors(1));
@@ -1344,12 +1346,12 @@ function set_shifting(monkeysInitial)
                     end
                 elseif strcmp(lastCorrPos, 'right')
                     tempArray = [{'left'}, {'top'}];
-                    randIndex1 = rand_int(1);
+                    randIndex1 = rand_int(2);
                     newCorrPosition = char(tempArray(randIndex1));
                     
                     if strcmp(newCorrPosition, 'left')
                         leftSubVal = colorOne;
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         rightSubVal = char(tempColors(randIndex2));
                         tempColors(randIndex2) = [];
                         topSubVal = char(tempColors(1));
@@ -1357,7 +1359,7 @@ function set_shifting(monkeysInitial)
                         correctSpot = 'left';
                     else
                         topSubVal = colorOne;
-                        randIndex3 = rand_int(1);
+                        randIndex3 = rand_int(2);
                         leftSubVal = char(tempColors(randIndex3));
                         tempColors(randIndex3) = [];
                         rightSubVal = char(tempColors(1));
@@ -1366,12 +1368,12 @@ function set_shifting(monkeysInitial)
                     end
                 elseif strcmp(lastCorrPos, 'top')
                     tempArray = [{'left'}, {'right'}];
-                    randIndex1 = rand_int(1);
+                    randIndex1 = rand_int(2);
                     newCorrPosition = char(tempArray(randIndex1));
                     
                     if strcmp(newCorrPosition, 'left')
                         leftSubVal = colorOne;
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         rightSubVal = char(tempColors(randIndex2));
                         tempColors(randIndex2) = [];
                         topSubVal = char(tempColors(1));
@@ -1379,7 +1381,7 @@ function set_shifting(monkeysInitial)
                         correctSpot = 'left';
                     else
                         rightSubVal = colorOne;
-                        randIndex3 = rand_int(1);
+                        randIndex3 = rand_int(2);
                         leftSubVal = char(tempColors(randIndex3));
                         tempColors(randIndex3) = [];
                         topSubVal = char(tempColors(1));
@@ -1413,12 +1415,12 @@ function set_shifting(monkeysInitial)
                 end
                 
                 % Find left stimulus value.
-                randIndex1 = rand_int(2);
+                randIndex1 = rand_int(3);
                 leftValSub = char(tempShapes(randIndex1));
                 tempShapes(randIndex1) = [];
 
                 % Find right stimulus value.
-                randIndex2 = rand_int(1);
+                randIndex2 = rand_int(2);
                 rightValSub = char(tempShapes(randIndex2));
                 tempShapes(randIndex2) = [];
 
@@ -1464,12 +1466,12 @@ function set_shifting(monkeysInitial)
                 % Choose new correct position from 2 that it wasn't last time.
                 if strcmp(lastCorrPos, 'left')
                     tempArray = [{'right'}, {'top'}];
-                    randIndex1 = rand_int(1);
+                    randIndex1 = rand_int(2);
                     newCorrPosition = char(tempArray(randIndex1));
                     
                     if strcmp(newCorrPosition, 'right')
                         rightSubVal = shapeOne;
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         leftSubVal = char(tempShapes(randIndex2));
                         tempShapes(randIndex2) = [];
                         topSubVal = char(tempShapes(1));
@@ -1477,7 +1479,7 @@ function set_shifting(monkeysInitial)
                         correctSpot = 'right';
                     else
                         topSubVal = shapeOne;
-                        randIndex3 = rand_int(1);
+                        randIndex3 = rand_int(2);
                         leftSubVal = char(tempShapes(randIndex3));
                         tempShapes(randIndex3) = [];
                         rightSubVal = char(tempShapes(1));
@@ -1486,12 +1488,12 @@ function set_shifting(monkeysInitial)
                     end
                 elseif strcmp(lastCorrPos, 'right')
                     tempArray = [{'left'}, {'top'}];
-                    randIndex1 = rand_int(1);
+                    randIndex1 = rand_int(2);
                     newCorrPosition = char(tempArray(randIndex1));
                     
                     if strcmp(newCorrPosition, 'left')
                         leftSubVal = shapeOne;
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         rightSubVal = char(tempShapes(randIndex2));
                         tempShapes(randIndex2) = [];
                         topSubVal = char(tempShapes(1));
@@ -1499,7 +1501,7 @@ function set_shifting(monkeysInitial)
                         correctSpot = 'left';
                     else
                         topSubVal = shapeOne;
-                        randIndex3 = rand_int(1);
+                        randIndex3 = rand_int(2);
                         leftSubVal = char(tempShapes(randIndex3));
                         tempShapes(randIndex3) = [];
                         rightSubVal = char(tempShapes(1));
@@ -1508,12 +1510,12 @@ function set_shifting(monkeysInitial)
                     end
                 elseif strcmp(lastCorrPos, 'top')
                     tempArray = [{'left'}, {'right'}];
-                    randIndex1 = rand_int(1);
+                    randIndex1 = rand_int(2);
                     newCorrPosition = char(tempArray(randIndex1));
                     
                     if strcmp(newCorrPosition, 'left')
                         leftSubVal = shapeOne;
-                        randIndex2 = rand_int(1);
+                        randIndex2 = rand_int(2);
                         rightSubVal = char(tempShapes(randIndex2));
                         tempShapes(randIndex2) = [];
                         topSubVal = char(tempShapes(1));
@@ -1521,7 +1523,7 @@ function set_shifting(monkeysInitial)
                         correctSpot = 'left';
                     else
                         rightSubVal = shapeOne;
-                        randIndex3 = rand_int(1);
+                        randIndex3 = rand_int(2);
                         leftSubVal = char(tempShapes(randIndex3));
                         tempShapes(randIndex3) = [];
                         topSubVal = char(tempShapes(1));
@@ -1685,7 +1687,7 @@ function set_shifting(monkeysInitial)
     
     % Returns a random int between 1 (inclusive) and integer + 1 (inclusive).
     function randInt = rand_int(integer)
-        randInt = round(rand(1) * integer + 1);
+        randInt = floor(rand(1) * integer + 1);
     end
     
     % Rewards monkey using the juicer with the passed duration.
@@ -1840,22 +1842,19 @@ function set_shifting(monkeysInitial)
                     [fixatingOnTarget, area] = check_fixation('triple', holdFixTime, timeToFix);
                     
                     if fixatingOnTarget
-                        % Fetch correct location.
                         if passedTrial
                             currTrialNumForObj = currTrial;
                         else
                             currTrialNumForObj = currTrialAtError;
                         end
                         
+                        % Fetch correct location.
                         correctSpot = corrAnsObject(currTrialNumForObj).correct;
                         currAnsPosition = correctSpot;
                         
                         if strcmp(area, correctSpot)
                             % Display feedback stimuli.
                             unstaggered_stimuli(strcat('correct', ';', area));
-                            
-                            % Give reward.
-                            reward(rewardDuration);
                             
                             % Notify Plexon that correct feedback has been given.
                             if recordWithPlexon
@@ -1872,6 +1871,16 @@ function set_shifting(monkeysInitial)
                             % Notify Plexon that all stimuli are gone.
                             if recordWithPlexon
                                 toplexon(5012);
+                            end
+                            
+                            WaitSecs(rewardDelay);
+                            
+                            % Give reward.
+                            reward(rewardDuration);
+                            
+                            % Notify Plexon that the reward was given.
+                            if recordWithPlexon
+                                toplexon(5013);
                             end
                             
                             % Update.
