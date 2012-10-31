@@ -1,23 +1,4 @@
-% Copyright (c) 2012 Aaron Roth
-% 
-% Permission is hereby granted, free of charge, to any person obtaining a copy
-% of this software and associated documentation files (the "Software"), to deal
-% in the Software without restriction, including without limitation the rights
-% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-% copies of the Software, and to permit persons to whom the Software is
-% furnished to do so, subject to the following conditions:
-% 
-% The above copyright notice and this permission notice shall be included in
-% all copies or substantial portions of the Software.
-% 
-% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-% THE SOFTWARE.
-%
+% Copyright (c) 2012 University of Rochester
 
 function set_shifting(monkeysInitial)
     % ---------------------------------------------- %
@@ -32,7 +13,7 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 20;            % Number correct trials before shift.
+      numCorrectToShift   = 3;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
       stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
@@ -41,10 +22,11 @@ function set_shifting(monkeysInitial)
                                            %         during staggered stimuli sessions.
       trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
-      recordWithPlexon    = 1;             % Values: 0 or 1. Sends events and data
+      recordWithPlexon    = 0;             % Values: 0 or 1. Sends events and data
                                            %         to Plexon when set to 1.
-      experimentType      = 'extraSS';     % Values: 'colorShift', 'shapeShift',
-                                           %         'intraSS', or 'extraSS'.
+      experimentType      = 'reversal';    % Values: 'colorShift', 'shapeShift',
+                                           %         'intraSS', 'extraSS',
+                                           %         or 'reversal'.
       sessionDimension    = 'random';      % Values: 'color', 'shape', or 'random'.
                                            %         Allows for control of the session
                                            %         dimension (color or shape).
@@ -116,6 +98,17 @@ function set_shifting(monkeysInitial)
     topBoundYMax    = centerY - 152 + fixAdjCenter;
     topBoundYMin    = centerY - 328 - fixAdjTTopSide;
     
+    % Fixation box values for the reversal learning task.
+    revLeftBoundXMax   = centerX - 152 + fixAdjCenter;
+    revLeftBoundXMin   = 0;
+    revLeftBoundYMax   = centerY * 2;
+    revLeftBoundYMin   = 0;
+    
+    revRightBoundXMax  = centerX * 2;
+    revRightBoundXMin  = centerX + 152 - fixAdjCenter;
+    revRightBoundYMax  = centerY * 2;
+    revRightBoundYMin  = 0;
+    
     % Other Coordinate variables.
     centerShift        = 240;  % Dist. from fix. dot to center of other fix. squares.
     circleAdj          = 22;
@@ -129,7 +122,7 @@ function set_shifting(monkeysInitial)
     triAdj             = 30;
     
     % References.
-    monkeyScreen       = 1;        % Number of the screen the monkey sees.
+    monkeyScreen       = 0;        % Number of the screen the monkey sees.
     
     % Saving.
     data               = struct([]);          % Workspace variable where trial data is saved.
@@ -201,20 +194,44 @@ function set_shifting(monkeysInitial)
     shapeSetUnits      = 0;
     
     % IntraSS trial info.
-    genDimSetShift    = 0;
+    genDimSetShift     = 0;
+    
+    % Reversal trial info.
+    correctColor       = '';
+    correctShape       = '';
+    currCorrAnsObjIndx = 0;
+    incorrColor        = '';
+    incorrShape        = '';
+    reversalType       = '';
+    sideLeft           = '';
+    sideRight          = '';
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
     % ---------------------------------------------- %
     
+    % Make sure the "experimentType" global variable has a legal value.
+    if ~strcmp(experimentType, 'colorShift') && ...
+       ~strcmp(experimentType, 'shapeShift') && ...
+       ~strcmp(experimentType, 'extraSS') && ...
+       ~strcmp(experimentType, 'intraSS') && ...
+       ~strcmp(experimentType, 'reversal')
+        disp('Error: The "experimentType" global variable has an illegal value.');
+        disp('Legal values: "colorShift", "shapeShift", "extraSS", "intraSS", or "reversal".');
+        
+        Screen('CloseAll');
+        
+        return;
+    end
+    
     % Saving.
-    prepare_for_saving;
+    % prepare_for_saving;
     
     % Window.
     window = setup_window;
     
     % Eyelink.
-    setup_eyelink;
+    % setup_eyelink;
     
     % ---------------------------------------------- %
     % ------------ Main experiment loop ------------ %
@@ -226,7 +243,7 @@ function set_shifting(monkeysInitial)
         
         inHoldingState = true;
         
-        print_stats();
+        % print_stats();
         
         % Check for pausing or quitting during ITI.
         startingTime = GetSecs;
@@ -346,33 +363,33 @@ function set_shifting(monkeysInitial)
                     end
                 end
             elseif strcmp(type, 'double')
-                % Determine if eye is within the left option boundary.
-                if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
-                   yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                % Determine if eye is within the left option boundary (reversal learning).
+                if xCoord >= revLeftBoundXMin && xCoord <= revLeftBoundXMax && ...
+                   yCoord >= revLeftBoundYMin && yCoord <= revLeftBoundYMax
                     % Determine if eye maintained fixation for given duration.
-                    checkFixBreak = fix_break_check(leftBoundXMin, leftBoundXMax, ...
-                                                    leftBoundYMin, leftBoundYMax, ...
+                    checkFixBreak = fix_break_check(revLeftBoundXMin, revLeftBoundXMax, ...
+                                                    revLeftBoundYMin, revLeftBoundYMax, ...
                                                     duration);
                     
                     if checkFixBreak == false
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'double';
+                        area = 'revLeft';
                         
                         return;
                     end
-                % Determine if eye is within the right option boundary.
-                elseif xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
-                       yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                % Determine if eye is within the right option boundary (reversal learning).
+                elseif xCoord >= revRightBoundXMin && xCoord <= revRightBoundXMax && ...
+                       yCoord >= revRightBoundYMin && yCoord <= revRightBoundYMax
                     % Determine if eye maintained fixation for given duration.
-                    checkFixBreak = fix_break_check(rightBoundXMin, rightBoundXMax, ...
-                                                    rightBoundYMin, rightBoundYMax, ...
+                    checkFixBreak = fix_break_check(revRightBoundXMin, revRightBoundXMax, ...
+                                                    revRightBoundYMin, revRightBoundYMax, ...
                                                     duration);
                     
                     if checkFixBreak == false
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'double';
+                        area = 'revRight';
                         
                         return;
                     end
@@ -502,6 +519,12 @@ function set_shifting(monkeysInitial)
         elseif strcmp(position, 'top')
             circleCenterX = centerX;
             circleCenterY = centerY - centerShift;
+        elseif strcmp(position, 'revLeft')
+            circleCenterX = centerX - centerShift;
+            circleCenterY = centerY;
+        elseif strcmp(position, 'revRight')
+            circleCenterX = centerX + centerShift;
+            circleCenterY = centerY;
         end
         
         if strcmp(type, 'solid')
@@ -537,6 +560,10 @@ function set_shifting(monkeysInitial)
                                                   leftBoundXMax leftBoundYMax], 1);
         Screen('FrameRect', window, colorYellow, [rightBoundXMin rightBoundYMin ...
                                                   rightBoundXMax rightBoundYMax], 1);
+        Screen('FrameRect', window, colorYellow, [revLeftBoundXMin revLeftBoundYMin ...
+                                                  revLeftBoundXMax revLeftBoundYMax], 1);
+        Screen('FrameRect', window, colorYellow, [revRightBoundXMin revRightBoundYMin ...
+                                                  revRightBoundXMax revRightBoundYMax], 1);
         Screen('Flip', window);
     end
     
@@ -560,6 +587,12 @@ function set_shifting(monkeysInitial)
         elseif strcmp(position, 'top')
             starCenterX = centerX;
             starCenterY = centerY - starShift;
+        elseif strcmp(position, 'revLeft')
+            starCenterX = centerX - centerShift;
+            starCenterY = centerY;
+        elseif strcmp(position, 'revRight')
+            starCenterX = centerX + centerShift;
+            starCenterY = centerY;
         end
         
         % Calculate all star points.
@@ -591,6 +624,12 @@ function set_shifting(monkeysInitial)
         elseif strcmp(position, 'top')
             triCenterX = centerX;
             triCenterY = centerY - centerShift;
+        elseif strcmp(position, 'revLeft')
+            triCenterX = centerX - centerShift;
+            triCenterY = centerY;
+        elseif strcmp(position, 'revRight')
+            triCenterX = centerX + centerShift;
+            triCenterY = centerY;
         end
         
         % Calculate outer triangle points.
@@ -1136,7 +1175,71 @@ function set_shifting(monkeysInitial)
                 lastBlockValue = trialValue;
             end
         elseif strcmp(experimentType, 'reversal')
-            % THIS CONDITION IS NOT CURRENTLY SUPPORTED.
+            % Initialize possible color and shape values and set first correct answer.
+            if trialCount == 0
+                % Choose a color randomly from the total color pool w/o replacement.
+                randValIndex1 = rand_int(3);
+                colorOne = char(colors(randValIndex1));
+                % Delete the color just picked from the pool.
+                colors(randValIndex1) = [];
+                
+                % Choose another color randomly from the pool w/o replacement.
+                randValIndex2 = rand_int(2);
+                colorTwo = char(colors(randValIndex2));
+                
+                % Choose a shape randomly from the total shape pool w/o replacement.
+                randValIndex1 = rand_int(3);
+                shapeOne = char(shapes(randValIndex1));
+                % Delete the shape just picked from the pool.
+                shapes(randValIndex1) = [];
+                
+                % Choose another shape randomly from the pool w/o replacement.
+                randValIndex2 = rand_int(2);
+                shapeTwo = char(shapes(randValIndex2));
+                
+                % Choose correct option.
+                randVal = rand_int(2);
+                if randVal == 1
+                    correctColor = colorOne;
+                    correctShape = shapeOne;
+                    incorrColor = colorTwo;
+                    incorrShape = shapeTwo;
+                    reversalType = 'one';
+                else
+                    correctColor = colorTwo;
+                    correctShape = shapeTwo;
+                    incorrColor = colorOne;
+                    incorrShape = shapeOne;
+                    reversalType = 'two';
+                end
+                
+                % Set the correct answer type.
+                temp(currTrial).type = 'reversal';
+                temp(currTrial).dimension = 'none';
+                temp(currTrial).color = correctColor;
+                temp(currTrial).shape = correctShape;
+                temp(currTrial).value = reversalType;
+            % Choose another correct answer.
+            else
+                % Choose correct option.
+                randVal = rand_int(2);
+                if randVal == 1
+                    correctColor = colorOne;
+                    correctShape = shapeOne;
+                    reversalType = 'one';
+                else
+                    correctColor = colorTwo;
+                    correctShape = shapeTwo;
+                    reversalType = 'two';
+                end
+                
+                % Set the correct answer type.
+                temp(currTrial).type = 'reversal';
+                temp(currTrial).dimension = 'none';
+                temp(currTrial).color = correctColor;
+                temp(currTrial).shape = correctShape;
+                temp(currTrial).value = reversalType;
+            end
         else
             disp('Error in generate_correct_answer.');
         end
@@ -1148,17 +1251,38 @@ function set_shifting(monkeysInitial)
         
         % Sets the current correct response.
         currentAnswer = temp(currTrial).value;
+        currCorrAnsObjIndx = currTrial;
         
         answer = temp;
     end
     
-    % Make random stimuli for a trial, making sure correct ans is included.
+    % Make random stimuli for a trial, making sure correct answer is included.
     function stimuli = generate_trial_stimuli()
         temp = struct([]);
         correctVal = currentAnswer;
         
         if strcmp(experimentType, 'reversal')
-            % THIS CONDITION IS NOT CURRENTLY SUPPORTED.
+            % Randomly select positions for each stimulus.
+            randIndex1 = rand_int(2);
+            
+            % Set those positions.
+            if randIndex1 == 1
+                leftVal = strcat(correctShape, ';', correctColor);
+                rightVal = strcat(incorrShape, ';', incorrColor);
+                correctSpot = 'left';
+            else
+                leftVal = strcat(incorrShape, ';', incorrColor);
+                rightVal = strcat(correctShape, ';', correctColor);
+                correctSpot = 'right';
+            end
+            
+            % Set the trial values: '<shape>;<color>'.
+            temp(currTrial).left  = leftVal;
+            temp(currTrial).right = rightVal;
+            
+            % Note the location of the correct choice.
+            corrAnsObject(currTrial).correct = correctSpot;
+            lastCorrPos = correctSpot;
         elseif strcmp(experimentType, 'intraSS') || strcmp(experimentType, 'extraSS')
             % Just generate a random location for the correct choice.
             if currTrial == 1 || strcmp(allRandom, 'yes')
@@ -1256,7 +1380,7 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).left  = leftVal;
                 temp(currTrial).right = rightVal;
                 temp(currTrial).top = topVal;
-
+                
                 % Note the location of the correct choice.
                 corrAnsObject(currTrial).correct = correctSpot;
                 lastCorrPos = correctSpot;
@@ -1535,7 +1659,7 @@ function set_shifting(monkeysInitial)
                 leftVal = strcat(leftSubVal, ';', chosenColor);
                 rightVal = strcat(rightSubVal, ';', chosenColor);
                 topVal = strcat(topSubVal, ';', chosenColor);
-
+                
                 % Set the trial values: '<shape>;<color>'.
                 temp(currTrial).left  = leftVal;
                 temp(currTrial).right = rightVal;
@@ -1557,10 +1681,13 @@ function set_shifting(monkeysInitial)
     
     % Returns the current x and y coordinants of the given eye.
     function [xCoord, yCoord] = get_eye_coords()
+        %{
         sampledPosition = Eyelink('NewestFloatSample');
-        
         xCoord = sampledPosition.gx(trackedEye);
         yCoord = sampledPosition.gy(trackedEye);
+        %}
+        
+        [xCoord, yCoord, ~, ~, ~, ~] = GetMouse(window); 
     end
     
     % Checks to see what key was pressed.
@@ -1575,7 +1702,7 @@ function set_shifting(monkeysInitial)
         key.pause = 0;
         
         % Get info about any key that was just pressed.
-        [keyIsDown, secs, keyCode] = KbCheck;
+        [~, ~, keyCode] = KbCheck;
         
         % Check pressed key against the keyCode array of 256 key codes.
         if keyCode(stopKey)
@@ -1690,6 +1817,15 @@ function set_shifting(monkeysInitial)
         randInt = floor(rand(1) * integer + 1);
     end
     
+    function reversal_staggered_stimuli()
+        disp('displaying staggered stimuli.');
+    end
+    
+    function reversal_unstaggered_stimuli(value)
+        disp('displaying unstaggered stimuli.');
+        disp(value);
+    end
+    
     % Rewards monkey using the juicer with the passed duration.
     function reward(rewardDuration)
         if rewardDuration ~= 0
@@ -1779,8 +1915,176 @@ function set_shifting(monkeysInitial)
             
             % Check experiment type.
             if strcmp(experimentType, 'reversal')
-                % THIS CONDITION IS NOT CURRENTLY SUPPORTED.
-                trialObject = generate_trial_stimuli; % Make sure to generate some stimuli!
+                % Only make new stimuli if the trial is passed.
+                if passedTrial
+                    trialObject = generate_trial_stimuli;
+                else
+                    newObj = struct([]);
+                    newObj(currTrial).left = trialObject(currTrial - 1).left;
+                    newObj(currTrial).right = trialObject(currTrial - 1).right;
+                    trialObject = newObj;
+                end
+                
+                % Run an unstaggered stimuli presentation session.
+                if strcmp(sessionType, 'unstaggered')
+                    % TODO: Define this function.
+                    reversal_unstaggered_stimuli('none;none');
+                    
+                    % Make sure fixation is held before a target is chosen.
+                    fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
+                                                    fixBoundYMin, fixBoundYMax, ...
+                                                    chooseHoldFixTime);
+                    
+                    if fixationBreak
+                        % Start trial over because fixation wasn't held.
+                        run_single_trial;
+                    else
+                        inHoldingState = false;
+                        % TODO: Define this function.
+                        reversal_unstaggered_stimuli('none;none');
+                    end
+                % Run a staggered stimuli presentation session.
+                elseif strcmp(sessionType, 'staggered')
+                    % TODO: Define this function.
+                    reversal_staggered_stimuli;
+                    
+                    % TODO: Define this function.
+                    % Use unstaggered function to draw all 2 options at once with required fixation.
+                    reversal_unstaggered_stimuli('none;none');
+                    
+                    % Notify Plexon that all three options appeared.
+                    if recordWithPlexon
+                        toplexon(5009);
+                    end
+                    
+                    % Check for fixation.
+                    [refixating, ~] = check_fixation('single', minFixTime, timeToFix);
+                    
+                    if ~refixating
+                        % Start trial over because fixation wasn't held.
+                        run_single_trial;
+                    else
+                        inHoldingState = false;
+                        % TODO: Define this function.
+                        reversal_unstaggered_stimuli('none;none');
+                    end
+                end
+                
+                fixatingOnTarget = false;
+                while ~fixatingOnTarget
+                    % Check for fixation on any three targets.
+                    [fixatingOnTarget, area] = check_fixation('double', holdFixTime, timeToFix);
+                    
+                    if fixatingOnTarget
+                        if passedTrial
+                            currTrialNumForObj = currTrial;
+                        else
+                            currTrialNumForObj = currTrialAtError;
+                        end
+                        
+                        % Fetch correct location.
+                        correctSpot = corrAnsObject(currTrialNumForObj).correct;
+                        currAnsPosition = correctSpot;
+                        
+                        if strcmp(area, correctSpot)
+                            % TODO: Define this function.
+                            % Display feedback stimuli.
+                            reversal_unstaggered_stimuli(strcat('correct', ';', area));
+                            
+                            % Notify Plexon that correct feedback has been given.
+                            if recordWithPlexon
+                                toplexon(5010);
+                            end
+                            
+                            WaitSecs(feedbackTime);
+                            
+                            % Clear screen.
+                            Screen('FillRect', window, colorBackground, ...
+                                   [0 0 (centerX * 2) (centerY * 2)]);
+                            Screen('Flip', window);
+                            
+                            % Notify Plexon that all stimuli are gone.
+                            if recordWithPlexon
+                                toplexon(5012);
+                            end
+                            
+                            WaitSecs(rewardDelay);
+                            
+                            % TODO: Make this reward probabalistic.
+                            % Give reward.
+                            % reward(rewardDuration);
+                            
+                            % TODO: Only send if reward was given.
+                            % Notify Plexon that the reward was given.
+                            if recordWithPlexon
+                                toplexon(5013);
+                            end
+                            
+                            % Update.
+                            chosenPosition = area;
+                            currentDim = char(corrAnsObject(currTrialNumForObj).dimension);
+                            numCorrTrials = numCorrTrials + 1;
+                            passedTrial = true;
+                            
+                            % TODO: Only say yes if actually rewarded.
+                            rewarded = 'yes';
+                            
+                            totalNumCorrTrials = totalNumCorrTrials + 1;
+                            trialOutcome = 'correct';
+                            trialCount = trialCount + 1;
+                            currBlockTrial = currBlockTrial + 1;
+                            
+                            % Calculate percentages.
+                            blockPercentCorr = round((numCorrTrials / currBlockTrial) * 100);
+                            totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
+                            
+                            % Save trial data.
+                            % send_and_save;
+                        else
+                            % TODO: Define this function.
+                            % Display feedback stimuli.
+                            reversal_unstaggered_stimuli(strcat('incorrect', ';', area));
+                            
+                            % Notify Plexon that incorrect feedback has been given.
+                            if recordWithPlexon
+                                toplexon(5011);
+                            end
+                            
+                            WaitSecs(feedbackTime);
+                            
+                            % Clear screen.
+                            Screen('FillRect', window, colorBackground, ...
+                                   [0 0 (centerX * 2) (centerY * 2)]);
+                            Screen('Flip', window);
+                            
+                            % Notify Plexon that all stimuli are gone.
+                            if recordWithPlexon
+                                toplexon(5012);
+                            end
+                            
+                            % Only reset error trial tracker if this is the first error in a row.
+                            if passedTrial
+                                currTrialAtError = currTrial;
+                            end
+                            
+                            % Update.
+                            chosenPosition = area;
+                            currentDim = char(corrAnsObject(currTrialNumForObj).dimension);
+                            passedTrial = false;
+                            rewarded = 'no';
+                            trialOutcome = 'incorrect';
+                            trialCount = trialCount + 1;
+                            currBlockTrial = currBlockTrial + 1;
+                            
+                            % Calculate percentages.
+                            blockPercentCorr = round((numCorrTrials / currBlockTrial) * 100);
+                            totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
+                            
+                            % Save trial data.
+                            % send_and_save;
+                        end
+                    end
+                end
             elseif strcmp(experimentType, 'intraSS') || ...
                    strcmp(experimentType, 'extraSS') || ...
                    strcmp(experimentType, 'colorShift') || ...
@@ -1796,7 +2100,7 @@ function set_shifting(monkeysInitial)
                     trialObject = newObj;
                 end
                 
-                % Run a staggered stimuli presentation session.
+                % Run an unstaggered stimuli presentation session.
                 if strcmp(sessionType, 'unstaggered')
                     unstaggered_stimuli('none;none');
                     
@@ -1812,7 +2116,7 @@ function set_shifting(monkeysInitial)
                         inHoldingState = false;
                         unstaggered_stimuli('none;none');
                     end
-                % Run an unstaggered stimuli presentation session.
+                % Run a staggered stimuli presentation session.
                 elseif strcmp(sessionType, 'staggered')
                     staggered_stimuli;
                     
@@ -1876,7 +2180,7 @@ function set_shifting(monkeysInitial)
                             WaitSecs(rewardDelay);
                             
                             % Give reward.
-                            reward(rewardDuration);
+                            % reward(rewardDuration);
                             
                             % Notify Plexon that the reward was given.
                             if recordWithPlexon
@@ -1899,7 +2203,7 @@ function set_shifting(monkeysInitial)
                             totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
                             
                             % Save trial data.
-                            send_and_save;
+                            % send_and_save;
                         else
                             % Display feedback stimuli.
                             unstaggered_stimuli(strcat('incorrect', ';', area));
@@ -1940,12 +2244,10 @@ function set_shifting(monkeysInitial)
                             totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
                             
                             % Save trial data.
-                            send_and_save;
+                            % send_and_save;
                         end
                     end
                 end
-            else
-                disp('Experiment started with an illegal value for the "experimentType" parameter.');
             end
         else
             % Redo this trial since monkey failed to start it.
