@@ -13,15 +13,15 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 2;             % Number correct trials before shift.
+      numCorrectToShift   = 3;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      stimFlashTime       = 0.4;           % How long a stimulus is flashed during
+      stimFlashTime       = 1;             % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
                                            %         staggered stimuli session.
-      interStimulusDelay  = 0.6;           % Delay between stimulus presentations
+      interStimulusDelay  = 0.4;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
       trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
-      sessionType         = 'unstaggered'; % Values: 'staggered' or 'unstaggered'.
+      sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
       recordWithPlexon    = 0;             % Values: 0 or 1. Sends events and data
                                            %         to Plexon when set to 1.
       experimentType      = 'reversal';    % Values: 'colorShift', 'shapeShift',
@@ -139,6 +139,7 @@ function set_shifting(monkeysInitial)
     holdFixTime        = 0.75;    % Duration to hold fixation before choosing.
     ITI                = 0.8;     % Intertrial interval.
     minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
+    pauseBeforeAllOn   = 0.4;     % In staggered reversal task: pause before all options appear.
     rewardDelay        = 0.5;     % Delay between end of correct feedback and reward.
     timeToFix          = intmax;  % Amount of time monkey is given to fixate.
     
@@ -1247,11 +1248,6 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).color = correctColor;
                 temp(currTrial).shape = correctShape;
                 temp(currTrial).value = reversalType;
-                
-                disp(reversalType);
-                disp(correctColor);
-                disp(correctShape);
-                disp('-----------------');
             % Choose another correct answer.
             else
                 % Choose correct option.
@@ -1276,11 +1272,6 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).color = correctColor;
                 temp(currTrial).shape = correctShape;
                 temp(currTrial).value = reversalType;
-                
-                disp(reversalType);
-                disp(correctColor);
-                disp(correctShape);
-                disp('-----------------');
             end
         else
             disp('Error in generate_correct_answer.');
@@ -1976,12 +1967,12 @@ function set_shifting(monkeysInitial)
                     end
                 % Run a staggered stimuli presentation session.
                 elseif strcmp(sessionType, 'staggered')
-                    % TODO: Define this function.
-                    reversal_staggered_stimuli;
+                    staggered_stimuli;
                     
-                    % TODO: Define this function.
-                    % Use unstaggered function to draw all 2 options at once with required fixation.
-                    reversal_unstaggered_stimuli('none;none');
+                    WaitSecs(pauseBeforeAllOn);
+                    
+                    % Use unstaggered function to draw both options at once with required fixation.
+                    unstaggered_stimuli('none;none');
                     
                     % Notify Plexon that all three options appeared.
                     if recordWithPlexon
@@ -1996,8 +1987,7 @@ function set_shifting(monkeysInitial)
                         run_single_trial;
                     else
                         inHoldingState = false;
-                        % TODO: Define this function.
-                        reversal_unstaggered_stimuli('none;none');
+                        unstaggered_stimuli('none;none');
                     end
                 end
                 
@@ -2409,6 +2399,8 @@ function set_shifting(monkeysInitial)
                 flashedThird = 2;
             elseif strcmp(stimThreeFlashed, 'right')
                 flashedThird = 3;
+            elseif strcmp(stimThreeFlashed, 'reversal')
+                flashedThird = 4;
             end
             
             if strcmp(rewarded, 'yes')
@@ -2580,10 +2572,6 @@ function set_shifting(monkeysInitial)
     end
     
     function staggered_stimuli()
-        left = strsplit(trialObject(currTrial).left, ';');
-        right = strsplit(trialObject(currTrial).right, ';');
-        top = strsplit(trialObject(currTrial).top, ';');
-        
         % Take the fixation dot off the screen.
         Screen('FillOval', window, colorBackground, [centerX - dotRadius + fixAdj; ...
                                                      centerY - dotRadius; ...
@@ -2596,730 +2584,1181 @@ function set_shifting(monkeysInitial)
             toplexon(5002);
         end
         
-        % Make sure stimuli are presented in same order if prev trial failed.
-        if passedTrial
-            randIndices = randperm(3);
-            prevStimPresOrder = randIndices;
-        else
-            randIndices = prevStimPresOrder;
-        end
-        
-        % Store the order stimuli were flashed.
-        stimOneFlashed = char(positions(randIndices(1)));
-        stimTwoFlashed = char(positions(randIndices(2)));
-        stimThreeFlashed = char(positions(randIndices(3)));
-        
-        % Display stimuli in a random order.
-        for index = 1:3
-            % Get a random index to choose a random stimulus presentation position.
-            randIndex = randIndices(index);
+        if strcmp(experimentType, 'reversal')
+            reversalPositions = [{'left'}, {'right'}];
             
-            if strcmp(char(positions(randIndex)), 'left')
-                % Draw a CIRCLE in LEFT position if needed.
-                if strcmp(left(1), 'circle')
-                    if strcmp(left(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(left(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display circle.
-                    draw_circle('left', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
+            left = strsplit(trialObject(currTrial).left, ';');
+            right = strsplit(trialObject(currTrial).right, ';');
+            
+            % Make sure stimuli are presented in same order if prev trial failed.
+            if passedTrial
+                randIndices = randperm(2);
+                prevStimPresOrder = randIndices;
+            else
+                randIndices = prevStimPresOrder;
+            end
+            
+            % Store the order stimuli were flashed.
+            stimOneFlashed = char(positions(randIndices(1)));
+            stimTwoFlashed = char(positions(randIndices(2)));
+            stimThreeFlashed = 'reversal';
+            
+            for index = 1:2
+                % Get a random index to choose a random stimulus presentation position.
+                randIndex = randIndices(index);
+
+                if strcmp(char(reversalPositions(randIndex)), 'left')
+                    % Draw a CIRCLE in LEFT position if needed.
+                    if strcmp(left(1), 'circle')
+                        if strcmp(left(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(left(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
                         end
-                    end
-                    
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
                         
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
-                           yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
-                            if enteredSpot == 0
+                        % Display circle.
+                        draw_circle('revLeft', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+                            
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= revLeftBoundXMin && xCoord <= revLeftBoundXMax && ...
+                               yCoord >= revLeftBoundYMin && yCoord <= revLeftBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(5061);
+                                        toplexon(5062);
                                     elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
+                                        toplexon(5064);
                                     end
-                                    
-                                    enteredSpot = 1;
-                                end
-                            end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
                                 end
                             end
                         end
-                    end
-                    
-                    % Hide circle.
-                    draw_circle('left', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-                
-                % Draw a STAR in LEFT position if needed.
-                if strcmp(left(1), 'star')
-                    if strcmp(left(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(left(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display star.
-                    draw_star('left', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
-                        end
-                    end
-                    
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
                         
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
-                           yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
-                            if enteredSpot == 0
-                                if recordWithPlexon
-                                    if index == 1
-                                        toplexon(5061);
-                                    elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
-                                    end
-                                    
-                                    enteredSpot = 1;
-                                end
+                        % Hide circle.
+                        draw_circle('revLeft', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
                             end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
-                                end
-                            end
-                        end
-                    end
-                    
-                    % Hide star.
-                    draw_star('left', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-                
-                % Draw a TRIANGLE in LEFT position if needed.
-                if strcmp(left(1), 'triangle')
-                    if strcmp(left(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(left(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display triangle.
-                    draw_triangle('left', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
                         end
                     end
 
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
-                        
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
-                           yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
-                            if enteredSpot == 0
+                    % Draw a STAR in LEFT position if needed.
+                    if strcmp(left(1), 'star')
+                        if strcmp(left(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(left(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display star.
+                        draw_star('revLeft', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= revLeftBoundXMin && xCoord <= revLeftBoundXMax && ...
+                               yCoord >= revLeftBoundYMin && yCoord <= revLeftBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(5061);
+                                        toplexon(5062);
                                     elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
+                                        toplexon(5064);
                                     end
-                                    
-                                    enteredSpot = 1;
-                                end
-                            end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
                                 end
                             end
                         end
-                    end
-                    
-                    % Hide triangle.
-                    draw_triangle('left', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-            elseif strcmp(char(positions(randIndex)), 'right')
-                % Draw a CIRCLE in RIGHT position if needed.
-                if strcmp(right(1), 'circle')
-                    if strcmp(right(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(right(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display circle.
-                    draw_circle('right', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
-                        end
-                    end
-                    
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
-                        
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
-                           yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
-                            if enteredSpot == 0
-                                if recordWithPlexon
-                                    if index == 1
-                                        toplexon(5061);
-                                    elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
-                                    end
-                                    
-                                    enteredSpot = 1;
-                                end
+
+                        % Hide star.
+                        draw_star('revLeft', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
                             end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
-                                end
-                            end
-                        end
-                    end
-                    
-                    % Hide circle.
-                    draw_circle('right', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-                
-                % Draw a STAR in RIGHT position if needed.
-                if strcmp(right(1), 'star')
-                    if strcmp(right(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(right(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display star.
-                    draw_star('right', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
                         end
                     end
 
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
-                        
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
-                           yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
-                            if enteredSpot == 0
+                    % Draw a TRIANGLE in LEFT position if needed.
+                    if strcmp(left(1), 'triangle')
+                        if strcmp(left(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(left(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display triangle.
+                        draw_triangle('revLeft', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= revLeftBoundXMin && xCoord <= revLeftBoundXMax && ...
+                               yCoord >= revLeftBoundYMin && yCoord <= revLeftBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(5061);
+                                        toplexon(5062);
                                     elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
+                                        toplexon(5064);
                                     end
-                                    
-                                    enteredSpot = 1;
-                                end
-                            end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
                                 end
                             end
                         end
-                    end
-                    
-                    % Hide star.
-                    draw_star('right', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
+
+                        % Hide triangle.
+                        draw_triangle('revLeft', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            end
                         end
                     end
-                end
-                
-                % Draw a TRIANGLE in RIGHT position if needed.
-                if strcmp(right(1), 'triangle')
-                    if strcmp(right(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(right(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display triangle.
-                    draw_triangle('right', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
+                elseif strcmp(char(reversalPositions(randIndex)), 'right')
+                    % Draw a CIRCLE in RIGHT position if needed.
+                    if strcmp(right(1), 'circle')
+                        if strcmp(right(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(right(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
                         end
-                    end
-                    
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
-                        
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
-                           yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
-                            if enteredSpot == 0
+
+                        % Display circle.
+                        draw_circle('revRight', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= revRightBoundXMin && xCoord <= revRightBoundXMax && ...
+                               yCoord >= revRightBoundYMin && yCoord <= revRightBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(5061);
+                                        toplexon(5062);
                                     elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
+                                        toplexon(5064);
                                     end
-                                    
-                                    enteredSpot = 1;
-                                end
-                            end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
                                 end
                             end
                         end
-                    end
-                    
-                    % Hide triangle.
-                    draw_triangle('right', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-            elseif strcmp(char(positions(randIndex)), 'top')
-                % Draw a CIRCLE in TOP position if needed.
-                if strcmp(top(1), 'circle')
-                    if strcmp(top(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(top(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display circle.
-                    draw_circle('top', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
-                        end
-                    end
-                    
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
                         
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
-                           yCoord >= topBoundYMin && yCoord <= topBoundYMax
-                            if enteredSpot == 0
-                                if recordWithPlexon
-                                    if index == 1
-                                        toplexon(5061);
-                                    elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
-                                    end
-                                    
-                                    enteredSpot = 1;
-                                end
+                        % Hide circle.
+                        draw_circle('revRight', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
                             end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
-                                end
-                            end
-                        end
-                    end
-                    
-                    % Hide circle.
-                    draw_circle('top', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-                
-                % Draw a STAR in TOP position if needed.
-                if strcmp(top(1), 'star')
-                    if strcmp(top(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(top(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display star.
-                    draw_star('top', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
-                        end
-                    end
-                    
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
-                        
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
-                           yCoord >= topBoundYMin && yCoord <= topBoundYMax
-                            if enteredSpot == 0
-                                if recordWithPlexon
-                                    if index == 1
-                                        toplexon(5061);
-                                    elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
-                                    end
-                                    
-                                    enteredSpot = 1;
-                                end
-                            end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
-                                end
-                            end
-                        end
-                    end
-                    
-                    % Hide star.
-                    draw_star('top', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
-                        end
-                    end
-                end
-                
-                % Draw a TRIANGLE in TOP position if needed.
-                if strcmp(top(1), 'triangle')
-                    if strcmp(top(2), 'cyan')
-                        colorFill = colorCyan;
-                    elseif strcmp(top(2), 'magenta')
-                        colorFill = colorMagenta;
-                    else
-                        colorFill = colorYellow;
-                    end
-                    
-                    % Display triangle.
-                    draw_triangle('top', 'solid', colorFill, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option appeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5003);
-                        elseif index == 2
-                            toplexon(5005);
-                        elseif index == 3
-                            toplexon(5007);
                         end
                     end
 
-                    % Flash choice on screen and send Plexon info if needed.
-                    timeStart = GetSecs;
-                    enteredSpot = 0;
-                    while stimFlashTime > (GetSecs - timeStart)
-                        [xCoord, yCoord] = get_eye_coords;
-                        
-                        % Determine if eye is within the left option boundary.
-                        if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
-                           yCoord >= topBoundYMin && yCoord <= topBoundYMax
-                            if enteredSpot == 0
+                    % Draw a STAR in RIGHT position if needed.
+                    if strcmp(right(1), 'star')
+                        if strcmp(right(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(right(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display star.
+                        draw_star('revRight', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= revRightBoundXMin && xCoord <= revRightBoundXMax && ...
+                               yCoord >= revRightBoundYMin && yCoord <= revRightBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
                                 if recordWithPlexon
                                     if index == 1
-                                        toplexon(5061);
+                                        toplexon(5062);
                                     elseif index == 2
-                                        toplexon(5063);
-                                    elseif index == 3
-                                        toplexon(5065);
+                                        toplexon(5064);
                                     end
-                                    
-                                    enteredSpot = 1;
-                                end
-                            end
-                        elseif enteredSpot
-                            enteredSpot = 0;
-                            
-                            if recordWithPlexon
-                                if index == 1
-                                    toplexon(5062);
-                                elseif index == 2
-                                    toplexon(5064);
-                                elseif index == 3
-                                    toplexon(5066);
                                 end
                             end
                         end
+
+                        % Hide star.
+                        draw_star('revRight', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            end
+                        end
                     end
-                    
-                    % Hide triangle.
-                    draw_triangle('top', 'solid', colorBackground, 'none');
-                    Screen('Flip', window);
-                    
-                    % Notify Plexon that an option disappeared.
-                    if recordWithPlexon
-                        if index == 1
-                            toplexon(5004);
-                        elseif index == 2
-                            toplexon(5006);
-                        elseif index == 3
-                            toplexon(5008);
+
+                    % Draw a TRIANGLE in RIGHT position if needed.
+                    if strcmp(right(1), 'triangle')
+                        if strcmp(right(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(right(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display triangle.
+                        draw_triangle('revRight', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= revRightBoundXMin && xCoord <= revRightBoundXMax && ...
+                               yCoord >= revRightBoundYMin && yCoord <= revRightBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide triangle.
+                        draw_triangle('revRight', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            end
                         end
                     end
                 end
             end
-            
-            % Delay between stimulus presentations.
-            WaitSecs(interStimulusDelay);
+        else
+            left = strsplit(trialObject(currTrial).left, ';');
+            right = strsplit(trialObject(currTrial).right, ';');
+            top = strsplit(trialObject(currTrial).top, ';');
+
+            % Make sure stimuli are presented in same order if prev trial failed.
+            if passedTrial
+                randIndices = randperm(3);
+                prevStimPresOrder = randIndices;
+            else
+                randIndices = prevStimPresOrder;
+            end
+
+            % Store the order stimuli were flashed.
+            stimOneFlashed = char(positions(randIndices(1)));
+            stimTwoFlashed = char(positions(randIndices(2)));
+            stimThreeFlashed = char(positions(randIndices(3)));
+
+            % Display stimuli in a random order.
+            for index = 1:3
+                % Get a random index to choose a random stimulus presentation position.
+                randIndex = randIndices(index);
+
+                if strcmp(char(positions(randIndex)), 'left')
+                    % Draw a CIRCLE in LEFT position if needed.
+                    if strcmp(left(1), 'circle')
+                        if strcmp(left(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(left(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display circle.
+                        draw_circle('left', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
+                               yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide circle.
+                        draw_circle('left', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+
+                    % Draw a STAR in LEFT position if needed.
+                    if strcmp(left(1), 'star')
+                        if strcmp(left(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(left(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display star.
+                        draw_star('left', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
+                               yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide star.
+                        draw_star('left', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+
+                    % Draw a TRIANGLE in LEFT position if needed.
+                    if strcmp(left(1), 'triangle')
+                        if strcmp(left(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(left(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display triangle.
+                        draw_triangle('left', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= leftBoundXMin && xCoord <= leftBoundXMax && ...
+                               yCoord >= leftBoundYMin && yCoord <= leftBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide triangle.
+                        draw_triangle('left', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+                elseif strcmp(char(positions(randIndex)), 'right')
+                    % Draw a CIRCLE in RIGHT position if needed.
+                    if strcmp(right(1), 'circle')
+                        if strcmp(right(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(right(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display circle.
+                        draw_circle('right', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
+                               yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide circle.
+                        draw_circle('right', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+
+                    % Draw a STAR in RIGHT position if needed.
+                    if strcmp(right(1), 'star')
+                        if strcmp(right(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(right(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display star.
+                        draw_star('right', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
+                               yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide star.
+                        draw_star('right', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+
+                    % Draw a TRIANGLE in RIGHT position if needed.
+                    if strcmp(right(1), 'triangle')
+                        if strcmp(right(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(right(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display triangle.
+                        draw_triangle('right', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= rightBoundXMin && xCoord <= rightBoundXMax && ...
+                               yCoord >= rightBoundYMin && yCoord <= rightBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide triangle.
+                        draw_triangle('right', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+                elseif strcmp(char(positions(randIndex)), 'top')
+                    % Draw a CIRCLE in TOP position if needed.
+                    if strcmp(top(1), 'circle')
+                        if strcmp(top(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(top(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display circle.
+                        draw_circle('top', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
+                               yCoord >= topBoundYMin && yCoord <= topBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide circle.
+                        draw_circle('top', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+
+                    % Draw a STAR in TOP position if needed.
+                    if strcmp(top(1), 'star')
+                        if strcmp(top(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(top(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display star.
+                        draw_star('top', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
+                               yCoord >= topBoundYMin && yCoord <= topBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide star.
+                        draw_star('top', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+
+                    % Draw a TRIANGLE in TOP position if needed.
+                    if strcmp(top(1), 'triangle')
+                        if strcmp(top(2), 'cyan')
+                            colorFill = colorCyan;
+                        elseif strcmp(top(2), 'magenta')
+                            colorFill = colorMagenta;
+                        else
+                            colorFill = colorYellow;
+                        end
+
+                        % Display triangle.
+                        draw_triangle('top', 'solid', colorFill, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option appeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5003);
+                            elseif index == 2
+                                toplexon(5005);
+                            elseif index == 3
+                                toplexon(5007);
+                            end
+                        end
+
+                        % Flash choice on screen and send Plexon info if needed.
+                        timeStart = GetSecs;
+                        enteredSpot = 0;
+                        while stimFlashTime > (GetSecs - timeStart)
+                            [xCoord, yCoord] = get_eye_coords;
+
+                            % Determine if eye is within the left option boundary.
+                            if xCoord >= topBoundXMin && xCoord <= topBoundXMax && ...
+                               yCoord >= topBoundYMin && yCoord <= topBoundYMax
+                                if enteredSpot == 0
+                                    if recordWithPlexon
+                                        if index == 1
+                                            toplexon(5061);
+                                        elseif index == 2
+                                            toplexon(5063);
+                                        elseif index == 3
+                                            toplexon(5065);
+                                        end
+
+                                        enteredSpot = 1;
+                                    end
+                                end
+                            elseif enteredSpot
+                                enteredSpot = 0;
+
+                                if recordWithPlexon
+                                    if index == 1
+                                        toplexon(5062);
+                                    elseif index == 2
+                                        toplexon(5064);
+                                    elseif index == 3
+                                        toplexon(5066);
+                                    end
+                                end
+                            end
+                        end
+
+                        % Hide triangle.
+                        draw_triangle('top', 'solid', colorBackground, 'none');
+                        Screen('Flip', window);
+
+                        % Notify Plexon that an option disappeared.
+                        if recordWithPlexon
+                            if index == 1
+                                toplexon(5004);
+                            elseif index == 2
+                                toplexon(5006);
+                            elseif index == 3
+                                toplexon(5008);
+                            end
+                        end
+                    end
+                end
+
+                % Delay between stimulus presentations.
+                WaitSecs(interStimulusDelay);
+            end
         end
     end
     
