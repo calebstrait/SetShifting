@@ -13,7 +13,7 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 3;             % Number correct trials before shift.
+      numCorrectToShift   = 2;             % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
       stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
@@ -21,7 +21,7 @@ function set_shifting(monkeysInitial)
       interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
       trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
-      sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
+      sessionType         = 'unstaggered'; % Values: 'staggered' or 'unstaggered'.
       recordWithPlexon    = 0;             % Values: 0 or 1. Sends events and data
                                            %         to Plexon when set to 1.
       experimentType      = 'reversal';    % Values: 'colorShift', 'shapeShift',
@@ -366,32 +366,60 @@ function set_shifting(monkeysInitial)
                 % Determine if eye is within the left option boundary (reversal learning).
                 if xCoord >= revLeftBoundXMin && xCoord <= revLeftBoundXMax && ...
                    yCoord >= revLeftBoundYMin && yCoord <= revLeftBoundYMax
+                    unstaggered_stimuli('looking;left');
+                    
                     % Determine if eye maintained fixation for given duration.
                     checkFixBreak = fix_break_check(revLeftBoundXMin, revLeftBoundXMax, ...
                                                     revLeftBoundYMin, revLeftBoundYMax, ...
                                                     duration);
                     
                     if checkFixBreak == false
+                        % Notify Plexon that fixation was acquired on a choice.
+                        if recordWithPlexon
+                            toplexon(5075);
+                        end
+                        
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'revLeft';
+                        area = 'left';
                         
                         return;
+                    else
+                        % Notify Plexon that fixation on previously looked at choice was lost.
+                        if recordWithPlexon
+                            toplexon(5074);
+                        end
+                        
+                        unstaggered_stimuli('none;none');
                     end
                 % Determine if eye is within the right option boundary (reversal learning).
                 elseif xCoord >= revRightBoundXMin && xCoord <= revRightBoundXMax && ...
                        yCoord >= revRightBoundYMin && yCoord <= revRightBoundYMax
+                    unstaggered_stimuli('looking;right');
+                    
                     % Determine if eye maintained fixation for given duration.
                     checkFixBreak = fix_break_check(revRightBoundXMin, revRightBoundXMax, ...
                                                     revRightBoundYMin, revRightBoundYMax, ...
                                                     duration);
                     
                     if checkFixBreak == false
+                        % Notify Plexon that fixation was acquired on a choice.
+                        if recordWithPlexon
+                            toplexon(5075);
+                        end
+                        
                         % Fixation was obtained for desired duration.
                         fixation = true;
-                        area = 'revRight';
+                        area = 'right';
                         
                         return;
+                    else
+                        % Notify Plexon that fixation on previously looked at choice was lost.
+                        if recordWithPlexon
+                            toplexon(5074);
+                        end
+                        
+                        unstaggered_stimuli('none;none');
                     end
                 end
             elseif strcmp(type, 'triple')
@@ -1219,6 +1247,11 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).color = correctColor;
                 temp(currTrial).shape = correctShape;
                 temp(currTrial).value = reversalType;
+                
+                disp(reversalType);
+                disp(correctColor);
+                disp(correctShape);
+                disp('-----------------');
             % Choose another correct answer.
             else
                 % Choose correct option.
@@ -1226,10 +1259,14 @@ function set_shifting(monkeysInitial)
                 if randVal == 1
                     correctColor = colorOne;
                     correctShape = shapeOne;
+                    incorrColor = colorTwo;
+                    incorrShape = shapeTwo;
                     reversalType = 'one';
                 else
                     correctColor = colorTwo;
                     correctShape = shapeTwo;
+                    incorrColor = colorOne;
+                    incorrShape = shapeOne;
                     reversalType = 'two';
                 end
                 
@@ -1239,6 +1276,11 @@ function set_shifting(monkeysInitial)
                 temp(currTrial).color = correctColor;
                 temp(currTrial).shape = correctShape;
                 temp(currTrial).value = reversalType;
+                
+                disp(reversalType);
+                disp(correctColor);
+                disp(correctShape);
+                disp('-----------------');
             end
         else
             disp('Error in generate_correct_answer.');
@@ -1817,15 +1859,6 @@ function set_shifting(monkeysInitial)
         randInt = floor(rand(1) * integer + 1);
     end
     
-    function reversal_staggered_stimuli()
-        disp('displaying staggered stimuli.');
-    end
-    
-    function reversal_unstaggered_stimuli(value)
-        disp('displaying unstaggered stimuli.');
-        disp(value);
-    end
-    
     % Rewards monkey using the juicer with the passed duration.
     function reward(rewardDuration)
         if rewardDuration ~= 0
@@ -1927,8 +1960,7 @@ function set_shifting(monkeysInitial)
                 
                 % Run an unstaggered stimuli presentation session.
                 if strcmp(sessionType, 'unstaggered')
-                    % TODO: Define this function.
-                    reversal_unstaggered_stimuli('none;none');
+                    unstaggered_stimuli('none;none');
                     
                     % Make sure fixation is held before a target is chosen.
                     fixationBreak = fix_break_check(fixBoundXMin, fixBoundXMax, ...
@@ -1940,8 +1972,7 @@ function set_shifting(monkeysInitial)
                         run_single_trial;
                     else
                         inHoldingState = false;
-                        % TODO: Define this function.
-                        reversal_unstaggered_stimuli('none;none');
+                        unstaggered_stimuli('none;none');
                     end
                 % Run a staggered stimuli presentation session.
                 elseif strcmp(sessionType, 'staggered')
@@ -1987,9 +2018,8 @@ function set_shifting(monkeysInitial)
                         currAnsPosition = correctSpot;
                         
                         if strcmp(area, correctSpot)
-                            % TODO: Define this function.
                             % Display feedback stimuli.
-                            reversal_unstaggered_stimuli(strcat('correct', ';', area));
+                            unstaggered_stimuli(strcat('correct', ';', area));
                             
                             % Notify Plexon that correct feedback has been given.
                             if recordWithPlexon
@@ -2041,9 +2071,8 @@ function set_shifting(monkeysInitial)
                             % Save trial data.
                             % send_and_save;
                         else
-                            % TODO: Define this function.
                             % Display feedback stimuli.
-                            reversal_unstaggered_stimuli(strcat('incorrect', ';', area));
+                            unstaggered_stimuli(strcat('incorrect', ';', area));
                             
                             % Notify Plexon that incorrect feedback has been given.
                             if recordWithPlexon
@@ -3369,9 +3398,14 @@ function set_shifting(monkeysInitial)
         status = input(1);
         spot = input(2);
         
-        left = strsplit(trialObject(currTrial).left, ';');
-        right = strsplit(trialObject(currTrial).right, ';');
-        top = strsplit(trialObject(currTrial).top, ';');
+        if strcmp(experimentType, 'reversal')
+            left = strsplit(trialObject(currTrial).left, ';');
+            right = strsplit(trialObject(currTrial).right, ';');
+        else
+            left = strsplit(trialObject(currTrial).left, ';');
+            right = strsplit(trialObject(currTrial).right, ';');
+            top = strsplit(trialObject(currTrial).top, ';');
+        end
         
         if inHoldingState
             Screen('FillOval', window, colorYellow, [centerX - dotRadius + fixAdj; ...
@@ -3385,201 +3419,336 @@ function set_shifting(monkeysInitial)
                                                          centerY + dotRadius]);
         end
         
-        % Draw a CIRCLE in LEFT position if needed.
-        if strcmp(left(1), 'circle')
-            if strcmp(left(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(left(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
+        if ~strcmp(experimentType, 'reversal')
+            % Draw a CIRCLE in LEFT position if needed.
+            if strcmp(left(1), 'circle')
+                if strcmp(left(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(left(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'left')
+                    draw_circle('left', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                    draw_circle('left', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                    draw_circle('left', 'outline', colorFill, colorRed);
+                else
+                    draw_circle('left', 'solid', colorFill, 'none');
+                end
+            end
+
+            % Draw a CIRCLE in RIGHT position if needed.
+            if strcmp(right(1), 'circle')
+                if strcmp(right(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(right(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'right')
+                    draw_circle('right', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                    draw_circle('right', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                    draw_circle('right', 'outline', colorFill, colorRed);
+                    disp('outline');
+                else
+                    draw_circle('right', 'solid', colorFill, 'none');
+                end
+            end
+
+            % Draw a CIRCLE in TOP position if needed.
+            if strcmp(top(1), 'circle')
+                if strcmp(top(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(top(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'top')
+                    draw_circle('top', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'top')
+                    draw_circle('top', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
+                    draw_circle('top', 'outline', colorFill, colorRed);
+                else
+                    draw_circle('top', 'solid', colorFill, 'none');
+                end
+            end
+
+            % Draw a STAR in LEFT position if needed.
+            if strcmp(left(1), 'star')
+                if strcmp(left(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(left(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'left')
+                    draw_star('left', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                    draw_star('left', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                    draw_star('left', 'outline', colorFill, colorRed);
+                else
+                    draw_star('left', 'solid', colorFill, 'none');
+                end
+            end
+
+            % Draw a STAR in RIGHT position if needed.
+            if strcmp(right(1), 'star')
+                if strcmp(right(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(right(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'right')
+                    draw_star('right', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                    draw_star('right', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                    draw_star('right', 'outline', colorFill, colorRed);
+                else
+                    draw_star('right', 'solid', colorFill, 'none')
+                end
+            end
+
+            % Draw a STAR in TOP position if needed.
+            if strcmp(top(1), 'star')
+                if strcmp(top(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(top(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'top')
+                    draw_star('top', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'top')
+                    draw_star('top', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
+                    draw_star('top', 'outline', colorFill, colorRed);
+                else
+                    draw_star('top', 'solid', colorFill, 'none');
+                end
+            end
+
+            % Draw a TRIANGLE in LEFT position if needed.
+            if strcmp(left(1), 'triangle')
+                if strcmp(left(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(left(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'left')
+                    draw_triangle('left', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                    draw_triangle('left', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                    draw_triangle('left', 'outline', colorFill, colorRed);
+                else
+                    draw_triangle('left', 'solid', colorFill, 'none');
+                end
             end
             
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'left')
-                draw_circle('left', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'left')
-                draw_circle('left', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
-                draw_circle('left', 'outline', colorFill, colorRed);
-            else
-                draw_circle('left', 'solid', colorFill, 'none');
-            end
-        end
-        
-        % Draw a CIRCLE in RIGHT position if needed.
-        if strcmp(right(1), 'circle')
-            if strcmp(right(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(right(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
-            end
-            
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'right')
-                draw_circle('right', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'right')
-                draw_circle('right', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
-                draw_circle('right', 'outline', colorFill, colorRed);
-            else
-                draw_circle('right', 'solid', colorFill, 'none');
-            end
-        end
-        
-        % Draw a CIRCLE in TOP position if needed.
-        if strcmp(top(1), 'circle')
-            if strcmp(top(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(top(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
+            % Draw a TRIANGLE in RIGHT position if needed.
+            if strcmp(right(1), 'triangle')
+                if strcmp(right(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(right(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+                
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'right')
+                    draw_triangle('right', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                    draw_triangle('right', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                    draw_triangle('right', 'outline', colorFill, colorRed);
+                else
+                    draw_triangle('right', 'solid', colorFill, 'none');
+                end
             end
             
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'top')
-                draw_circle('top', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'top')
-                draw_circle('top', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
-                draw_circle('top', 'outline', colorFill, colorRed);
-            else
-                draw_circle('top', 'solid', colorFill, 'none');
+            % Draw a TRIANGLE in TOP position if needed.
+            if strcmp(top(1), 'triangle')
+                if strcmp(top(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(top(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+                
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'top')
+                    draw_triangle('top', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'top')
+                    draw_triangle('top', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
+                    draw_triangle('top', 'outline', colorFill, colorRed);
+                else
+                    draw_triangle('top', 'solid', colorFill, 'none');
+                end
             end
-        end
-        
-        % Draw a STAR in LEFT position if needed.
-        if strcmp(left(1), 'star')
-            if strcmp(left(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(left(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
+        else
+            % Draw a CIRCLE in LEFT position if needed.
+            if strcmp(left(1), 'circle')
+                if strcmp(left(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(left(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'left')
+                    draw_circle('revLeft', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                    draw_circle('revLeft', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                    draw_circle('revLeft', 'outline', colorFill, colorRed);
+                else
+                    draw_circle('revLeft', 'solid', colorFill, 'none');
+                end
             end
-            
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'left')
-                draw_star('left', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'left')
-                draw_star('left', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
-                draw_star('left', 'outline', colorFill, colorRed);
-            else
-                draw_star('left', 'solid', colorFill, 'none');
-            end
-        end
-        
-        % Draw a STAR in RIGHT position if needed.
-        if strcmp(right(1), 'star')
-            if strcmp(right(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(right(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
-            end
-            
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'right')
-                draw_star('right', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'right')
-                draw_star('right', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
-                draw_star('right', 'outline', colorFill, colorRed);
-            else
-                draw_star('right', 'solid', colorFill, 'none')
-            end
-        end
-        
-        % Draw a STAR in TOP position if needed.
-        if strcmp(top(1), 'star')
-            if strcmp(top(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(top(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
-            end
-            
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'top')
-                draw_star('top', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'top')
-                draw_star('top', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
-                draw_star('top', 'outline', colorFill, colorRed);
-            else
-                draw_star('top', 'solid', colorFill, 'none');
-            end
-        end
-        
-        % Draw a TRIANGLE in LEFT position if needed.
-        if strcmp(left(1), 'triangle')
-            if strcmp(left(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(left(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
+
+            % Draw a CIRCLE in RIGHT position if needed.
+            if strcmp(right(1), 'circle')
+                if strcmp(right(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(right(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'right')
+                    draw_circle('revRight', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                    draw_circle('revRight', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                    draw_circle('revRight', 'outline', colorFill, colorRed);
+                else
+                    draw_circle('revRight', 'solid', colorFill, 'none');
+                end
             end
             
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'left')
-                draw_triangle('left', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'left')
-                draw_triangle('left', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
-                draw_triangle('left', 'outline', colorFill, colorRed);
-            else
-                draw_triangle('left', 'solid', colorFill, 'none');
+            % Draw a STAR in LEFT position if needed.
+            if strcmp(left(1), 'star')
+                if strcmp(left(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(left(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'left')
+                    draw_star('revLeft', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                    draw_star('revLeft', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                    draw_star('revLeft', 'outline', colorFill, colorRed);
+                else
+                    draw_star('revLeft', 'solid', colorFill, 'none');
+                end
             end
-        end
-        
-        % Draw a TRIANGLE in RIGHT position if needed.
-        if strcmp(right(1), 'triangle')
-            if strcmp(right(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(right(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
+
+            % Draw a STAR in RIGHT position if needed.
+            if strcmp(right(1), 'star')
+                if strcmp(right(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(right(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'right')
+                    draw_star('revRight', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                    draw_star('revRight', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                    draw_star('revRight', 'outline', colorFill, colorRed);
+                else
+                    draw_star('revRight', 'solid', colorFill, 'none')
+                end
             end
             
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'right')
-                draw_triangle('right', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'right')
-                draw_triangle('right', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
-                draw_triangle('right', 'outline', colorFill, colorRed);
-            else
-                draw_triangle('right', 'solid', colorFill, 'none');
+            % Draw a TRIANGLE in LEFT position if needed.
+            if strcmp(left(1), 'triangle')
+                if strcmp(left(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(left(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'left')
+                    draw_triangle('revLeft', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'left')
+                    draw_triangle('revLeft', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'left')
+                    draw_triangle('revLeft', 'outline', colorFill, colorRed);
+                else
+                    draw_triangle('revLeft', 'solid', colorFill, 'none');
+                end
             end
-        end
-        
-        % Draw a TRIANGLE in TOP position if needed.
-        if strcmp(top(1), 'triangle')
-            if strcmp(top(2), 'cyan')
-                colorFill = colorCyan;
-            elseif strcmp(top(2), 'magenta')
-                colorFill = colorMagenta;
-            else
-                colorFill = colorYellow;
-            end
-            
-            % Draw shape with feedback outline if needed.
-            if strcmp(status, 'looking') && strcmp(spot, 'top')
-                draw_triangle('top', 'outline', colorFill, colorWhite);
-            elseif strcmp(status, 'correct') && strcmp(spot, 'top')
-                draw_triangle('top', 'outline', colorFill, colorGreen);
-            elseif strcmp(status, 'incorrect') && strcmp(spot, 'top')
-                draw_triangle('top', 'outline', colorFill, colorRed);
-            else
-                draw_triangle('top', 'solid', colorFill, 'none');
+
+            % Draw a TRIANGLE in RIGHT position if needed.
+            if strcmp(right(1), 'triangle')
+                if strcmp(right(2), 'cyan')
+                    colorFill = colorCyan;
+                elseif strcmp(right(2), 'magenta')
+                    colorFill = colorMagenta;
+                else
+                    colorFill = colorYellow;
+                end
+
+                % Draw shape with feedback outline if needed.
+                if strcmp(status, 'looking') && strcmp(spot, 'right')
+                    draw_triangle('revRight', 'outline', colorFill, colorWhite);
+                elseif strcmp(status, 'correct') && strcmp(spot, 'right')
+                    draw_triangle('revRight', 'outline', colorFill, colorGreen);
+                elseif strcmp(status, 'incorrect') && strcmp(spot, 'right')
+                    draw_triangle('revRight', 'outline', colorFill, colorRed);
+                else
+                    draw_triangle('revRight', 'solid', colorFill, 'none');
+                end
             end
         end
         
