@@ -44,7 +44,7 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 + 5074 - looking away from previously looked at choice
 + 5075 - fixation acquired on an option
 
-## Trial data sent to Plexon
+## Trial data sent to Plexon for all tasks but reversal learning
 
 + trial number        
 + current trial within the current block     
@@ -98,3 +98,46 @@ This MATLAB script is currently capable of testing intra-dimensional and extra-d
 	+ 1 = color	
 	+ 2 = shape	
 + correct choices until shift occurs
+
+## Trial data sent to Plexon during the reversal learning task
+
++ trial number        
++ current trial within the current block     
++ trial outcome
+	+ 0 = incorrect
+	+ 1 = correct
++ choice made
+	+ 2 = left
+	+ 3 = right
++ location of the correct position
+	+ 2 = left
+	+ 3 = right
++ block percent correct (whole percentage)
++ total percent correct (whole percentage)
++ trial stimulus in left position:
+    + 11 = circle, cyan
+	+ 12 = circle, magenta
+	+ 13 = circle, yellow
+	+ 21 = star, cyan
+	+ 22 = star, magenta
+	+ 23 = star, yellow
+	+ 31 = triangle, cyan
+	+ 32 = triangle, magenta
+	+ 33 = triangle, yellow
++ trial stimulus in right position:
+	+ same encoding as above
++ position displayed first in staggered presentation
+	+ 2 = left
+	+ 3 = right
++ position displayed second in staggered presentation
+	+ 2 = left
+	+ 3 = right
++ rewarded or not
+	+ 0 = not rewarded
+	+ 1 = was rewarded				
++ experiment type
+	+ 1 = intra-dimensional
+	+ 2 = extra-dimensional
+	+ 3 = reversal
++ correct choices until shift occurs
++ percent chance a reward will be given when the correct option is chosen (whole percentage)

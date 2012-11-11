@@ -13,12 +13,17 @@ function set_shifting(monkeysInitial)
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     % @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %
     
-      numCorrectToShift   = 3;             % Number correct trials before shift.
+      numCorrectToShift   = 15;            % Number correct trials before shift.
       rewardDuration      = 0.12;          % How long the juicer is open.
-      stimFlashTime       = 1;             % How long a stimulus is flashed during
+      chanceOfReward      = 0.8;           % Value: floating point number between
+                                           %        0 and 1 (on the range excluding 0
+                                           %        and including 1). Probability of
+                                           %        a reward being given when a
+                                           %        correct choice is made.
+      stimFlashTime       = 0.4;           % How long a stimulus is flashed during
                                            %         initial stimuli presentation during a
                                            %         staggered stimuli session.
-      interStimulusDelay  = 0.4;           % Delay between stimulus presentations
+      interStimulusDelay  = 0.6;           % Delay between stimulus presentations
                                            %         during staggered stimuli sessions.
       trackedEye          = 1;             % Values: 1 (left eye), 2 (right eye).
       sessionType         = 'staggered';   % Values: 'staggered' or 'unstaggered'.
@@ -122,7 +127,7 @@ function set_shifting(monkeysInitial)
     triAdj             = 30;
     
     % References.
-    monkeyScreen       = 0;        % Number of the screen the monkey sees.
+    monkeyScreen       = 1;        % Number of the screen the monkey sees.
     
     % Saving.
     data               = struct([]);          % Workspace variable where trial data is saved.
@@ -130,12 +135,12 @@ function set_shifting(monkeysInitial)
     stimTwoFlashed     = 'N/A';               % The second staggered stimulus presented.
     stimThreeFlashed   = 'N/A';               % The third staggered stimulus presented.
     saveCommand        = NaN;                 % Command string that will save .mat files.         
-    setShiftingData    = '/Data/SetShifting'; % Directory where .mat files are saved.
+    setShiftingData    = '~/Desktop/Data/SetShifting'; % Directory where .mat files are saved.
     varName            = 'data';              % Name of the var to save in the workspace.
     
     % Times.
     feedbackTime       = 0.4;     % Duration of the error state.
-    chooseHoldFixTime  = 0.1;     % Duration fixation must be held while targets are on.
+    chooseHoldFixTime  = 0.25;     % Duration fixation must be held while targets are on.
     holdFixTime        = 0.75;    % Duration to hold fixation before choosing.
     ITI                = 0.8;     % Intertrial interval.
     minFixTime         = 0.1;     % Min time monkey must fixate to start trial.
@@ -204,8 +209,6 @@ function set_shifting(monkeysInitial)
     incorrColor        = '';
     incorrShape        = '';
     reversalType       = '';
-    sideLeft           = '';
-    sideRight          = '';
     
     % ---------------------------------------------- %
     % ------------------- Setup -------------------- %
@@ -226,13 +229,13 @@ function set_shifting(monkeysInitial)
     end
     
     % Saving.
-    % prepare_for_saving;
+    prepare_for_saving;
     
     % Window.
     window = setup_window;
     
     % Eyelink.
-    % setup_eyelink;
+    setup_eyelink;
     
     % ---------------------------------------------- %
     % ------------ Main experiment loop ------------ %
@@ -244,7 +247,7 @@ function set_shifting(monkeysInitial)
         
         inHoldingState = true;
         
-        % print_stats();
+        print_stats();
         
         % Check for pausing or quitting during ITI.
         startingTime = GetSecs;
@@ -367,6 +370,11 @@ function set_shifting(monkeysInitial)
                 % Determine if eye is within the left option boundary (reversal learning).
                 if xCoord >= revLeftBoundXMin && xCoord <= revLeftBoundXMax && ...
                    yCoord >= revLeftBoundYMin && yCoord <= revLeftBoundYMax
+                    % Notify Plexon that the eye is looking at the left choice.
+                    if recordWithPlexon
+                        toplexon(5072);
+                    end
+               
                     unstaggered_stimuli('looking;left');
                     
                     % Determine if eye maintained fixation for given duration.
@@ -396,6 +404,11 @@ function set_shifting(monkeysInitial)
                 % Determine if eye is within the right option boundary (reversal learning).
                 elseif xCoord >= revRightBoundXMin && xCoord <= revRightBoundXMax && ...
                        yCoord >= revRightBoundYMin && yCoord <= revRightBoundYMax
+                    % Notify Plexon that the eye is looking at the right choice.
+                    if recordWithPlexon
+                        toplexon(5073);
+                    end
+                    
                     unstaggered_stimuli('looking;right');
                     
                     % Determine if eye maintained fixation for given duration.
@@ -1889,7 +1902,7 @@ function set_shifting(monkeysInitial)
         
         % Check for fixation.
         [fixating, ~] = check_fixation('single', minFixTime, timeToFix);
-        
+         
         if fixating
             % Make sure correct answer is set at start of the session.
             if trialCount == 0
@@ -2030,14 +2043,18 @@ function set_shifting(monkeysInitial)
                             
                             WaitSecs(rewardDelay);
                             
-                            % TODO: Make this reward probabalistic.
-                            % Give reward.
-                            % reward(rewardDuration);
-                            
-                            % TODO: Only send if reward was given.
-                            % Notify Plexon that the reward was given.
-                            if recordWithPlexon
-                                toplexon(5013);
+                            % Give reward with an preset probability.
+                            random = rand;
+                            if random <= chanceOfReward
+                                reward(rewardDuration);
+                                rewarded = 'yes';
+                                
+                                % Notify Plexon that the reward was given.
+                                if recordWithPlexon
+                                    toplexon(5013);
+                                end
+                            else
+                                rewarded = 'no';
                             end
                             
                             % Update.
@@ -2045,10 +2062,6 @@ function set_shifting(monkeysInitial)
                             currentDim = char(corrAnsObject(currTrialNumForObj).dimension);
                             numCorrTrials = numCorrTrials + 1;
                             passedTrial = true;
-                            
-                            % TODO: Only say yes if actually rewarded.
-                            rewarded = 'yes';
-                            
                             totalNumCorrTrials = totalNumCorrTrials + 1;
                             trialOutcome = 'correct';
                             trialCount = trialCount + 1;
@@ -2059,7 +2072,7 @@ function set_shifting(monkeysInitial)
                             totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
                             
                             % Save trial data.
-                            % send_and_save;
+                            send_and_save;
                         else
                             % Display feedback stimuli.
                             unstaggered_stimuli(strcat('incorrect', ';', area));
@@ -2100,7 +2113,7 @@ function set_shifting(monkeysInitial)
                             totalPercentCorr = round((totalNumCorrTrials / trialCount) * 100);
                             
                             % Save trial data.
-                            % send_and_save;
+                            send_and_save;
                         end
                     end
                 end
@@ -2199,7 +2212,7 @@ function set_shifting(monkeysInitial)
                             WaitSecs(rewardDelay);
                             
                             % Give reward.
-                            % reward(rewardDuration);
+                            reward(rewardDuration);
                             
                             % Notify Plexon that the reward was given.
                             if recordWithPlexon
@@ -2290,11 +2303,13 @@ function set_shifting(monkeysInitial)
             corrPosCode = 1;
         end
         
-        % Convert current dimension into a code.
-        if strcmp(currentDim, 'color')
-            currentDimCode = 1;
-        elseif strcmp(currentDim, 'shape')
-            currentDimCode = 2;
+        if ~strcmp(experimentType, 'reversal')
+            % Convert current dimension into a code.
+            if strcmp(currentDim, 'color')
+                currentDimCode = 1;
+            elseif strcmp(currentDim, 'shape')
+                currentDimCode = 2;
+            end
         end
         
         if recordWithPlexon
@@ -2315,28 +2330,31 @@ function set_shifting(monkeysInitial)
             
             leftOption = trialObject(currTrial).left;
             rightOption = trialObject(currTrial).right;
-            topOption = trialObject(currTrial).top;
             
-            if strcmp(topOption, 'circle;cyan')
-                topOptionCode = 11;
-            elseif strcmp(topOption, 'circle;magenta')
-                topOptionCode = 12;
-            elseif strcmp(topOption, 'circle;yellow')
-                topOptionCode = 13;
-            elseif strcmp(topOption, 'star;cyan')
-                topOptionCode = 21;
-            elseif strcmp(topOption, 'star;magenta')
-                topOptionCode = 22;
-            elseif strcmp(topOption, 'star;yellow')
-                topOptionCode = 23;
-            elseif strcmp(topOption, 'triangle;cyan')
-                topOptionCode = 31;
-            elseif strcmp(topOption, 'triangle;magenta')
-                topOptionCode = 32;
-            elseif strcmp(topOption, 'triangle;yellow')
-                topOptionCode = 33;
+            if ~strcmp(experimentType, 'reversal')
+                topOption = trialObject(currTrial).top;
+            
+                if strcmp(topOption, 'circle;cyan')
+                    topOptionCode = 11;
+                elseif strcmp(topOption, 'circle;magenta')
+                    topOptionCode = 12;
+                elseif strcmp(topOption, 'circle;yellow')
+                    topOptionCode = 13;
+                elseif strcmp(topOption, 'star;cyan')
+                    topOptionCode = 21;
+                elseif strcmp(topOption, 'star;magenta')
+                    topOptionCode = 22;
+                elseif strcmp(topOption, 'star;yellow')
+                    topOptionCode = 23;
+                elseif strcmp(topOption, 'triangle;cyan')
+                    topOptionCode = 31;
+                elseif strcmp(topOption, 'triangle;magenta')
+                    topOptionCode = 32;
+                elseif strcmp(topOption, 'triangle;yellow')
+                    topOptionCode = 33;
+                end
             end
-
+            
             if strcmp(leftOption, 'circle;cyan')
                 leftOptionCode = 11;
             elseif strcmp(leftOption, 'circle;magenta')
@@ -2409,48 +2427,6 @@ function set_shifting(monkeysInitial)
                 rewardedCode = 0;
             end
             
-            %{
-            if timeToFix == intmax
-                maxFixTime = 15000;
-            else
-                if timeToFix < 1
-                    maxFixTime = timeToFix * 1000;
-                else
-                    maxFixTime = timeToFix;
-                end
-            end
-            
-            if minFixTime < 1
-                fixTimeMin = minFixTime * 1000;
-            else
-                fixTimeMin = minFixTime;
-            end
-            
-            if feedbackTime < 1
-                feedbackDuration = feedbackTime * 1000;
-            else
-                feedbackDuration  = feedbackTime;
-            end
-            
-            if ITI < 1
-                intertrialInterval = ITI * 1000;
-            else
-                intertrialInterval = ITI;
-            end
-            
-            if stimFlashTime < 1
-                stimFlashTimeCode = stimFlashTime * 1000;
-            else
-                stimFlashTimeCode = stimFlashTime;
-            end
-            
-            if interStimulusDelay < 1
-                interStimulusDelayCode = interStimulusDelay * 1000;
-            else
-                interStimulusDelayCode = interStimulusDelay;
-            end
-            %}
-            
             if strcmp(experimentType, 'intraSS')
                 experimentTypeCode = 1;
             elseif strcmp(experimentType, 'extraSS')
@@ -2458,14 +2434,6 @@ function set_shifting(monkeysInitial)
             elseif strcmp(experimentType, 'reversal')
                 experimentTypeCode = 3;
             end
-            
-            %{
-            if strcmp(sessionType, 'unstaggered')
-                sessionTypeCode = 1;
-            elseif strcmp(sessionType, 'staggered')
-                sessionTypeCode = 2;
-            end
-            %}
             
             % Send flag to Plexon to indicate trial data is going to be sent next.
             toplexon(6000);
@@ -2478,16 +2446,33 @@ function set_shifting(monkeysInitial)
             toplexon(corrPosCode);
             toplexon(blockPercentCorr);
             toplexon(totalPercentCorr);
-            toplexon(topOptionCode);
+            
+            if ~strcmp(experimentType, 'reversal')
+                toplexon(topOptionCode);
+            end
+            
             toplexon(leftOptionCode);
             toplexon(rightOptionCode);
             toplexon(flashedFirst);
             toplexon(flashedSecond);
-            toplexon(flashedThird);
+            
+            if ~strcmp(experimentType, 'reversal')
+                toplexon(flashedThird);
+            end
+            
             toplexon(rewardedCode);
             toplexon(experimentTypeCode);
-            toplexon(currentDimCode);
+            
+            if ~strcmp(experimentType, 'reversal')
+                toplexon(currentDimCode);
+            end
+            
             toplexon(numCorrectToShift);
+            
+            if strcmp(experimentType, 'reversal')
+                rewardChance = chanceOfReward * 100;
+                toplexon(rewardChance);
+            end
             
             % Send flag to Plexon to indicate trial data sending has stopped.
             toplexon(7000);
@@ -2504,7 +2489,11 @@ function set_shifting(monkeysInitial)
         data(currTrial).trialStimuli = trialObject(currTrial); % All stimuli and their positions.
         data(currTrial).firstFlashedStim = stimOneFlashed;   % The first staggered stimulus presented.
         data(currTrial).secondFlashedStim = stimTwoFlashed;  % The second staggered stimulus presented.
-        data(currTrial).thirdFlashedStim = stimThreeFlashed; % The third staggered stimulus presented.
+        
+        if ~strcmp(experimentType, 'reversal')
+            data(currTrial).thirdFlashedStim = stimThreeFlashed; % The third staggered stimulus presented.
+        end
+        
         data(currTrial).rewarded = rewarded;                 % Whether or not a reward was given.
         data(currTrial).timeToFixate = timeToFix;            % Max allowed for all fixations.
         data(currTrial).minFixTimeToStart = minFixTime;      % Fixatin time needed to start task.
@@ -2514,11 +2503,19 @@ function set_shifting(monkeysInitial)
         data(currTrial).stimFlashTime = stimFlashTime;       % Time stimulus is flashed during initial stimuli presentation.
         data(currTrial).interStimDelay = interStimulusDelay; % Time between stimulus flashes during initial stimuli presentation.
         data(currTrial).experimentType = experimentType;     % What version of the task this session was.
-        data(currTrial).currentRuleType = currentDim;        % What the current rule is: color or shape.
+        
+        if ~strcmp(experimentType, 'reversal')
+            data(currTrial).currentRuleType = currentDim;        % What the current rule is: color or shape.
+        end
+        
         data(currTrial).sessionType = sessionType;           % Whether this was staggered or unstaggered.
         data(currTrial).correctToShift = numCorrectToShift;  % Number of correct trials before a shift.
         data(currTrial).numberOfShifts = shifts;             % Total number of shifts made.
         data(currTrial).trackedEye = trackedEye;             % The eye being tracked.
+        
+        if strcmp(experimentType, 'reversal')
+            data(currTrial).chanceOfReward = chanceOfReward;
+        end
         
         eval(saveCommand);
     end
@@ -2621,7 +2618,7 @@ function set_shifting(monkeysInitial)
                         % Display circle.
                         draw_circle('revLeft', 'solid', colorFill, 'none');
                         Screen('Flip', window);
-
+                        
                         % Notify Plexon that an option appeared.
                         if recordWithPlexon
                             if index == 1
